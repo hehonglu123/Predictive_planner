@@ -1,0 +1,5 @@
+#!/bin/bash
+source ~/catkin_ws/devel_isolated/setup.bash
+
+
+gazebo  --verbose -s libgazebo_robotraconteur_server_plugin.so --robotraconteur-server-tcp-port=11346

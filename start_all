@@ -1,0 +1,10 @@
+#!/bin/bash
+
+gnome-terminal --tab -e ./start_gazebo
+sleep 5s
+./initialization.py
+gnome-terminal -e ./start_robot_driver
+sleep 2s
+./home.py
+
+

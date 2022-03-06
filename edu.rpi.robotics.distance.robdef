@@ -1,0 +1,26 @@
+service edu.rpi.robotics.distance
+
+stdver 0.9
+
+struct transformation
+    field int8 row
+    field int8 column
+    field string name
+    field single[] H
+end
+struct distance_report
+	field single[] 	Closest_Pt
+	field single[] 	Closest_Pt_env
+	field single	min_distance	
+	field int8 		J2C
+end
+object env
+	property int8 num_robot
+	property single{list} distance_matrix
+	property string{list} L2C
+	property single{list} min_distances
+	property transformation{list} transformations
+	function distance_report distance_check(int8 robot_idx,double[] joints, double dt)
+	function void move_robot(string robot, single[] H)
+
+end
