@@ -1,15 +1,11 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 from RobotRaconteur.Client import *
 import time
 import numpy as np
 import sys
-sys.path.append('../../')
-from vel_emulate import EmulatedVelocityControl
-sys.path.append('../../toolbox')
+sys.path.append('toolbox')
 from sawyer_ik import inv as sawyer_inv
-from ur_ik import inv as ur_inv
 from abb_ik import inv as abb_inv
-from staubli_ik import inv as staubli_inv
 
 R_sawyer=np.array([[ 0., 0., -1. ],
  [ 0., -1.,  0.],

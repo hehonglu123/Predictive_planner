@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 from RobotRaconteur.Client import *
 import math
@@ -33,7 +33,7 @@ def initialize(robot_sdf,model_name,H):
 
 #read sdf file
 model_name="sawyer"
-f = open('../models/'+model_name+'/model.sdf','r')
+f = open('models/'+model_name+'/model.sdf','r')
 robot_sdf = f.read()
 with open('calibration/Sawyer.yaml') as file:
 	H = np.array(yaml.load(file)['H'],dtype=np.float64)
@@ -41,7 +41,7 @@ with open('calibration/Sawyer.yaml') as file:
 initialize(robot_sdf,model_name,H)
 #read sdf file
 model_name="abb"
-f = open('../models/'+model_name+'/model.sdf','r')
+f = open('models/'+model_name+'/model.sdf','r')
 robot_sdf = f.read()
 with open('calibration/ABB.yaml') as file:
 	H = np.array(yaml.load(file)['H'],dtype=np.float64)

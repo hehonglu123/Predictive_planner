@@ -559,13 +559,13 @@
     <collision name="ABB1200_base_link_fixed_joint_lump__collision_collision">
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="model://ABB1200/meshes/collision/base_link.stl" scale="1 1 1"/>
+        <mesh filename="model://abb/meshes/collision/base_link.stl" scale="1 1 1"/>
       </geometry>
     </collision>
     <visual name="ABB1200_base_link_fixed_joint_lump__visual_visual">
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="model://ABB1200/meshes/visual/base_link.dae" scale="1 1 1"/>
+        <mesh filename="model://abb/meshes/visual/base_link.dae" scale="1 1 1"/>
       </geometry>
     </visual>
   </link>
@@ -591,13 +591,13 @@
     <collision name="ABB1200_link_1_fixed_joint_lump__collision_collision">
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="model://ABB1200/meshes/collision/link_1.stl" scale="1 1 1"/>
+        <mesh filename="model://abb/meshes/collision/link_1.stl" scale="1 1 1"/>
       </geometry>
     </collision>
     <visual name="ABB1200_link_1_fixed_joint_lump__visual_visual">
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="model://ABB1200/meshes/visual/link_1.dae" scale="1 1 1"/>
+        <mesh filename="model://abb/meshes/visual/link_1.dae" scale="1 1 1"/>
       </geometry>
     </visual>
   </link>
@@ -610,13 +610,13 @@
     <collision name="ABB1200_link_2_fixed_joint_lump__collision_collision">
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="model://ABB1200/meshes/collision/link_2.stl" scale="1 1 1"/>
+        <mesh filename="model://abb/meshes/collision/link_2.stl" scale="1 1 1"/>
       </geometry>
     </collision>
     <visual name="ABB1200_link_2_fixed_joint_lump__visual_visual">
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="model://ABB1200/meshes/visual/link_2.dae" scale="1 1 1"/>
+        <mesh filename="model://abb/meshes/visual/link_2.dae" scale="1 1 1"/>
       </geometry>
     </visual>
   </link>
@@ -629,13 +629,13 @@
     <collision name="ABB1200_link_3_fixed_joint_lump__collision_collision">
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="model://ABB1200/meshes/collision/link_3.stl" scale="1 1 1"/>
+        <mesh filename="model://abb/meshes/collision/link_3.stl" scale="1 1 1"/>
       </geometry>
     </collision>
     <visual name="ABB1200_link_3_fixed_joint_lump__visual_visual">
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="model://ABB1200/meshes/visual/link_3.dae" scale="1 1 1"/>
+        <mesh filename="model://abb/meshes/visual/link_3.dae" scale="1 1 1"/>
       </geometry>
     </visual>
   </link>
@@ -648,13 +648,13 @@
     <collision name="ABB1200_link_4_fixed_joint_lump__collision_collision">
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="model://ABB1200/meshes/collision/link_4.stl" scale="1 1 1"/>
+        <mesh filename="model://abb/meshes/collision/link_4.stl" scale="1 1 1"/>
       </geometry>
     </collision>
     <visual name="ABB1200_link_4_fixed_joint_lump__visual_visual">
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="model://ABB1200/meshes/visual/link_4.dae" scale="1 1 1"/>
+        <mesh filename="model://abb/meshes/visual/link_4.dae" scale="1 1 1"/>
       </geometry>
     </visual>
   </link>
@@ -667,13 +667,13 @@
     <collision name="ABB1200_link_5_fixed_joint_lump__collision_collision">
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="model://ABB1200/meshes/collision/link_5.stl" scale="1 1 1"/>
+        <mesh filename="model://abb/meshes/collision/link_5.stl" scale="1 1 1"/>
       </geometry>
     </collision>
     <visual name="ABB1200_link_5_fixed_joint_lump__visual_visual">
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="model://ABB1200/meshes/visual/link_5.dae" scale="1 1 1"/>
+        <mesh filename="model://abb/meshes/visual/link_5.dae" scale="1 1 1"/>
       </geometry>
     </visual>
   </link>
@@ -686,13 +686,13 @@
     <collision name="ABB1200_link_6_fixed_joint_lump__collision_collision">
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="model://ABB1200/meshes/collision/link_6.stl" scale="1 1 1"/>
+        <mesh filename="model://abb/meshes/collision/link_6.stl" scale="1 1 1"/>
       </geometry>
     </collision>
     <visual name="ABB1200_link_6_fixed_joint_lump__visual_visual">
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="model://ABB1200/meshes/visual/link_6.dae" scale="1 1 1"/>
+        <mesh filename="model://abb/meshes/visual/link_6.dae" scale="1 1 1"/>
       </geometry>
     </visual>
   </link>

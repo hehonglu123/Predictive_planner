@@ -1,5 +1,4 @@
 from general_robotics_toolbox import *
-from general_robotics_toolbox_invkin import *
 import numpy as np
 
 ex=np.array([[1],[0],[0]])

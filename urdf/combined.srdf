@@ -4,6 +4,8 @@
     A URDF file must exist for this robot as well, where the joints and the links that are referenced are defined
 -->
 <robot name="combined">
+    <!--Contact Managers plugins -->
+    <contact_managers_plugin_config filename="model://abb/contact_manager_plugins.yaml"/>
     <!--UR5-->
     <!--GROUPS: Representation of a set of joints and links. This can be useful for specifying DOF to plan for, defining arms, end effectors, etc-->
     <!--LINKS: When a link is specified, the parent joint of that link (if it exists) is automatically included-->
@@ -11,31 +13,34 @@
     <!--CHAINS: When a chain is specified, all the links along the chain (including endpoints) are included in the group. Additionally, all the joints that are parents to included links are also included. This means that joints along the chain and the parent joint of the base link are included in the group-->
     <!--SUBGROUPS: Groups can also be formed by referencing to already defined group names-->
 
-    <group_state name="all_zero" group="manipulator">
-        <joint name="ABB1200_joint_1" value="0" />
-        <joint name="ABB1200_joint_2" value="0" />
-        <joint name="ABB1200_joint_3" value="0" />
-        <joint name="ABB1200_joint_4" value="0" />
-        <joint name="ABB1200_joint_5" value="0" />
-        <joint name="ABB1200_joint_6" value="0" />
-    </group_state>
-
+    <group name="ABB">
+      <chain base_link="ABB1200_base_link" tip_link="ABB1200_link_6"/>
+      <group_state name="all_zero" group="ABB">
+          <joint name="ABB1200_joint_1" value="0" />
+          <joint name="ABB1200_joint_2" value="0" />
+          <joint name="ABB1200_joint_3" value="0" />
+          <joint name="ABB1200_joint_4" value="0" />
+          <joint name="ABB1200_joint_5" value="0" />
+          <joint name="ABB1200_joint_6" value="0" />
+      </group_state>
+    </group>
 
     <!--Sawyer-->
     <group name="right_arm">
-    <chain base_link="sawyer_pedestal" tip_link="right_hand"/>
-  </group>
+      <chain base_link="sawyer_pedestal" tip_link="right_hand"/>
+      <group_state group="right_arm" name="zero_pose">
+        <joint name="right_j0" value="0"/>
+        <joint name="right_j1" value="0"/>
+        <joint name="right_j2" value="0"/>
+        <joint name="right_j3" value="0"/>
+        <joint name="right_j4" value="0"/>
+        <joint name="right_j5" value="0"/>
+        <joint name="right_j6" value="0"/>
+      </group_state>
+    </group>
   <!--GROUP STATES: Purpose: Define a named state for a particular group, in
     terms of joint values. This is useful to define states like 'folded arms'-->
-  <group_state group="right_arm" name="zero_pose">
-    <joint name="right_j0" value="0"/>
-    <joint name="right_j1" value="0"/>
-    <joint name="right_j2" value="0"/>
-    <joint name="right_j3" value="0"/>
-    <joint name="right_j4" value="0"/>
-    <joint name="right_j5" value="0"/>
-    <joint name="right_j6" value="0"/>
-  </group_state>
+
 
   <!--DISABLE COLLISIONS: By default it is assumed that any link of the robot
     could potentially come into collision with any other link in the robot.
@@ -122,7 +127,7 @@
   <disable_collisions link1="pedestal" link2="pedestal_feet" reason="Adjacent"/>
   <disable_collisions link1="controller_box" link2="pedestal_feet" reason="Adjacent"/>
   <!--Modified -->
-  <disable_collisions link1="pedestal" link2="base_link" reason="Mannual"/>
+  <disable_collisions link1="pedestal" link2="right_arm_base_link" reason="Mannual"/>
   <disable_collisions link1="pedestal" link2="controller_box" reason="Mannual"/>
   <disable_collisions link1="right_arm_base_link" link2="controller_box" reason="Mannual"/>
   <disable_collisions link1="head" link2="right_l2" reason="Mannual"/>
@@ -148,11 +153,7 @@
   <disable_collisions link1="screen" link2="right_l4_2" reason="Mannual"/>
   <disable_collisions link1="pedestal" link2="right_l2" reason="Mannual"/>
   <disable_collisions link1="right_l0" link2="right_l5" reason="Mannual"/>
-  <disable_collisions link1="right_l6" link2="upper_arm_link" reason="Mannual"/>
-  <disable_collisions link1="right_hand" link2="upper_arm_link" reason="Mannual"/>
-  <disable_collisions link1="right_l5" link2="upper_arm_link" reason="Mannual"/>
-  <disable_collisions link1="right_l4_2" link2="upper_arm_link" reason="Mannual"/>
-  <disable_collisions link1="base_link" link2="controller_box" reason="Mannual"/>
+  <disable_collisions link1="right_arm_base_link" link2="controller_box" reason="Mannual"/>
 
   <!-- ABB -->
   <disable_collisions link1="ABB1200_base_link" link2="ABB1200_link_1" reason="Adjacent" />
