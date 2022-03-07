@@ -3,6 +3,9 @@
 Ubuntu (20.04) with ROS noetic
 wsl2 on win11 OK
 
+* Simulation robot service (https://drive.google.com/file/d/1lNFGjh11DI32MYN8jgVuNADaLYteue4R/view?usp=sharing & [dotnet3 runtime](https://docs.microsoft.com/en-us/dotnet/core/install/linux-ubuntu))
+* Swig 4.0.2 or later
+
 ## Binary Packages:
 * lcov: sudo apt-get install locv
 * ipopt: sudo apt-get install ros-noetic-ipopt
