@@ -118,8 +118,8 @@ class Planner(object):
 		for key in robots_joint_dict:	
 			self.t_env.setState(self.robot_jointname_dict[key], robots_joint_dict[key])
 
-		# env_state = self.t_env.getCurrentState()
-		# self.manager.setCollisionObjectsTransform(env_state.link_transforms)
+		env_state = self.t_env.getState()
+		self.manager.setCollisionObjectsTransform(env_state.link_transforms)
 
 		result = tesseract_collision.ContactResultMap()
 		contacts = self.manager.contactTest(result,tesseract_collision.ContactRequest(tesseract_collision.ContactTestType_CLOSEST))
