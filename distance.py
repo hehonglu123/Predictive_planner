@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from tesseract_robotics.tesseract_environment import Environment
+from tesseract_robotics.tesseract_environment import Environment, ChangeJointOriginCommand
 from tesseract_robotics import tesseract_geometry
 from tesseract_robotics.tesseract_common import Isometry3d, CollisionMarginData
 from tesseract_robotics import tesseract_collision
@@ -69,10 +69,16 @@ class Planner(object):
 		self.scene_graph=self.t_env.getSceneGraph()
 
 		#update robot poses based on calibration file
-		self.scene_graph.changeJointOrigin("sawyer_pose", Isometry3d(H_Sawyer))
-		self.scene_graph.changeJointOrigin("abb_pose", Isometry3d(H_ABB))
+		cmd1 = ChangeJointOriginCommand("sawyer_pose", Isometry3d(H_Sawyer))
+		cmd2 = ChangeJointOriginCommand("abb_pose", Isometry3d(H_ABB))
 
-		contact_distance=0.5
+		self.t_env.applyCommand(cmd1)
+		self.t_env.applyCommand(cmd2)
+		
+		# self.scene_graph.changeJointOrigin("sawyer_pose", Isometry3d(H_Sawyer))
+		# self.scene_graph.changeJointOrigin("abb_pose", Isometry3d(H_ABB))
+
+		contact_distance=0.1
 		monitored_link_names = self.t_env.getLinkNames()
 		self.manager = self.t_env.getDiscreteContactManager()
 		self.manager.setActiveCollisionObjects(monitored_link_names)
@@ -104,7 +110,7 @@ class Planner(object):
 		elif J2C==9:
 			return 4
 		elif J2C==10:
-			return 7
+			return 6
 		else:
 			return J2C
 
@@ -134,7 +140,7 @@ class Planner(object):
 		self.manager.setCollisionObjectsTransform(env_state.link_transforms)
 
 		result = tesseract_collision.ContactResultMap()
-		contacts = self.manager.contactTest(result,tesseract_collision.ContactRequest(tesseract_collision.ContactTestType_CLOSEST))
+		contacts = self.manager.contactTest(result,tesseract_collision.ContactRequest(tesseract_collision.ContactTestType_ALL))
 		result_vector = tesseract_collision.ContactResultVector()
 		tesseract_collision.flattenResults(result,result_vector)
 
@@ -156,25 +162,31 @@ class Planner(object):
 			min_distance[robot_name]=9
 
 		for i in range(len(distances)):
-			print(names[i],distances[i])
-		# 	for robot_name in self.robot_name_list:
-		# 		###make sure only 1 of robot link in collision objects
-		# 		if names[i][0] in self.robot_linkname_dict[robot_name] and names[i][1] not in self.robot_linkname_dict[robot_name]:
-		# 			if min_distance[robot_name]>distances[i]:
-		# 				d_all[robot_name]=nearest_points[i][1]-nearest_points[i][0]
-		# 				J2C_all[robot_name]=self.robot_linkname_dict[robot_name].index(names[i][0])
-		# 				min_distance[robot_name]=distances[i]
-		# 				min_idx[robot_name]=i
+			for robot_name in self.robot_name_list:
+				###make sure only 1 of robot link in collision objects
+				if names[i][0] in self.robot_linkname_dict[robot_name] and names[i][1] not in self.robot_linkname_dict[robot_name]:
+					if min_distance[robot_name]>distances[i]:
+						d_all[robot_name]=nearest_points[i][1]-nearest_points[i][0]
+						if robot_name=='sawyer':
+							J2C_all[robot_name]=self.Sawyer_link(self.robot_linkname_dict[robot_name].index(names[i][0]))
+						else:
+							J2C_all[robot_name]=self.robot_linkname_dict[robot_name].index(names[i][0])
+						min_distance[robot_name]=distances[i]
+						min_idx[robot_name]=i
 
-		# 		if names[i][0] not in self.robot_linkname_dict[robot_name] and names[i][1] in self.robot_linkname_dict[robot_name]:
-		# 			if min_distance[robot_name]>distances[i]:
-		# 				d_all[robot_name]=nearest_points[i][0]-nearest_points[i][1]
-		# 				J2C_all[robot_name]=self.robot_linkname_dict[robot_name].index(names[i][1])
-		# 				min_distance[robot_name]=distances[i]
-		# 				min_idx[robot_name]=i
+				if names[i][0] not in self.robot_linkname_dict[robot_name] and names[i][1] in self.robot_linkname_dict[robot_name]:
+					if min_distance[robot_name]>distances[i]:
+						d_all[robot_name]=nearest_points[i][0]-nearest_points[i][1]
+						if robot_name=='sawyer':
+							J2C_all[robot_name]=self.Sawyer_link(self.robot_linkname_dict[robot_name].index(names[i][0]))
+						else:
+							J2C_all[robot_name]=self.robot_linkname_dict[robot_name].index(names[i][1])
+						min_distance[robot_name]=distances[i]
+						min_idx[robot_name]=i
 
+		# print(d_all,J2C_all)
 
-		# return d_all,J2C_all
+		return d_all,J2C_all
 
 	def distack_check_all_Nstep(self):
 
@@ -184,7 +196,9 @@ class Planner(object):
 def main():
 
 	distance_inst=Planner()
-	robots_joint_dict={'sawyer':np.array([0,-0.6,0,0,0,0,0]),'abb':np.array([ 0.14833199, 0.99963736,-0.99677272,-0.        , 1.56793168, 0.64833199])}
+	# robots_joint_dict={'sawyer':np.array([0,-0.6,0,0,0,0,0]),'abb':np.array([ 0.14833199, 0.99963736,-0.99677272,-0.        , 1.56793168, 0.64833199])}
+	robots_joint_dict={'sawyer':np.zeros(7),'abb':np.zeros(6)}
+
 	distance_inst.viewer_joints_update(robots_joint_dict)
 	distance_inst.distance_check_all(robots_joint_dict)
 

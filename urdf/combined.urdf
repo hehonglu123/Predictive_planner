@@ -8,7 +8,7 @@
   <link name="world"/>
 
   <joint name="sawyer_pose" type="fixed">
-    <origin rpy="0 0 0" xyz="0. 0. 0.11"/><!--sawyer base-->
+    <origin rpy="0 0 0" xyz="0. 0. 0.93"/><!--sawyer base-->
     <parent link="world"/>
     <child link="sawyer_pedestal"/>
   </joint>
