@@ -154,6 +154,7 @@
   <disable_collisions link1="pedestal" link2="right_l2" reason="Mannual"/>
   <disable_collisions link1="right_l0" link2="right_l5" reason="Mannual"/>
   <disable_collisions link1="right_arm_base_link" link2="controller_box" reason="Mannual"/>
+  <disable_collisions link1="right_l0" link2="controller_box" reason="Mannual"/>
 
   <!-- ABB -->
   <disable_collisions link1="ABB1200_base_link" link2="ABB1200_link_1" reason="Adjacent" />

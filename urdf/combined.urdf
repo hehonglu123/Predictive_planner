@@ -75,12 +75,12 @@
     </inertial>
   </link>
   <link name="controller_box">
-    <collision>
+   <!--  <collision>
       <origin rpy="0 0 0" xyz="-0.325 0 -0.38"/>
       <geometry>
         <box size="0.22 0.4 0.53"/>
       </geometry>
-    </collision>
+    </collision> -->
   </link>
   <joint name="controller_box_fixed" type="fixed">
     <origin rpy="0 0 0" xyz="0.0 0.0 0.0"/>
@@ -128,12 +128,12 @@
       </geometry>
       <material name="sawyer_red"/>
     </visual>
-    <collision>
+    <!-- <collision>
       <origin rpy="0 0 0" xyz="0 0 0.12"/>
       <geometry>
         <cylinder length="0.24" radius="0.08"/>
       </geometry>
-    </collision>
+    </collision> -->
   </link>
   <link name="right_l0">
     <inertial>
@@ -556,12 +556,12 @@
       <origin rpy="0 0 0" xyz="-0.02898  0.00059  0.11273"/>
       <inertia ixx="0.101998" ixy="0.000495482" ixz="0.000311158" iyy="0.13969" iyz="-0.000245375" izz="0.130433"/>
     </inertial>
-    <collision name="ABB1200_base_link_fixed_joint_lump__collision_collision">
+    <!-- <collision name="ABB1200_base_link_fixed_joint_lump__collision_collision">
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
         <mesh filename="model://abb/meshes/collision/base_link.stl" scale="1 1 1"/>
       </geometry>
-    </collision>
+    </collision> -->
     <visual name="ABB1200_base_link_fixed_joint_lump__visual_visual">
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>

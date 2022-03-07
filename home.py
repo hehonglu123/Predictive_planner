@@ -43,6 +43,7 @@ robot.jog_freespace([0,-0.6,0,0,0,0,0], np.ones((7,)), False)
 
 
 p=abb_inv([0.66,0.5,0.6],R_abb).reshape((6,1))
+q=[ 0.64833199, 0.99963736,-0.99677272,-0.        , 1.56793168, 0.64833199]
 robot3.jog_freespace(p, np.ones((6,)), False)
 
 
