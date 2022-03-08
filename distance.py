@@ -39,6 +39,8 @@ class Planner(object):
 		self.H_Sawyer=H42H3(H_Sawyer)
 		self.H_ABB=H42H3(H_ABB)
 
+		self.transformation={'sawyer':H_Sawyer,'abb':H_ABB}
+
 		#Connect to robot service
 		# Sawyer= RRN.ConnectService('rr+tcp://localhost:58654?service=robot')
 		# ABB= RRN.ConnectService('rr+tcp://localhost:58655?service=robot')
@@ -149,7 +151,7 @@ class Planner(object):
 		names=[]
 		for c in result_vector:
 			distances.append(c.distance)
-			nearest_points.append([c.nearest_points[0],c.nearest_points[1]])
+			nearest_points.append([c.nearest_points[0].flatten(),c.nearest_points[1].flatten()])
 			names.append([c.link_names[0],c.link_names[1]])
 
 		d_all={}	###collision vector: Closest_Pt_env - Closest_Pt
@@ -184,12 +186,30 @@ class Planner(object):
 						min_distance[robot_name]=distances[i]
 						min_idx[robot_name]=i
 
-		# print(d_all,J2C_all)
+		###convert collision vector to local frame
+		for robot_name in self.robot_name_list:
+			d_all[robot_name]=np.dot(self.transformation[robot_name][:-1,:-1],d_all[robot_name])
 
+		# print(d_all,J2C_all,min_distance['sawyer'])
 		return d_all,J2C_all
 
-	def distack_check_all_Nstep(self):
+	def distance_check_all_Nstep(self,robots_joint_dict_N):
+		d_all_N={}
+		J2C_all_N={}
+		for robot_name in self.robot_name_list:
+			d_all_N[robot_name]=[]
+			J2C_all_N[robot_name]=[]
+		for i in range(self.N_step):
+			#check collision at ith step
+			robots_joint_dict={}
+			for robot_name in self.robot_name_list:
+				robots_joint_dict[robot_name]=robots_joint_dict_N[robot_name][i]
+			d_all,J2C_all=self.distance_check_all(robots_joint_dict)
+			for robot_name in self.robot_name_list:
+				d_all_N[robot_name].append(d_all[robot_name])
+				J2C_all_N[robot_name].append(J2C_all[robot_name])
 
+		# print(d_all_N,J2C_all_N)
 		return d_all_N,J2C_all_N
 
 
@@ -197,10 +217,12 @@ def main():
 
 	distance_inst=Planner()
 	# robots_joint_dict={'sawyer':np.array([0,-0.6,0,0,0,0,0]),'abb':np.array([ 0.14833199, 0.99963736,-0.99677272,-0.        , 1.56793168, 0.64833199])}
-	robots_joint_dict={'sawyer':np.zeros(7),'abb':np.zeros(6)}
+	# # robots_joint_dict={'sawyer':np.zeros(7),'abb':np.zeros(6)}
+	# distance_inst.viewer_joints_update(robots_joint_dict)
+	# distance_inst.distance_check_all(robots_joint_dict)
 
-	distance_inst.viewer_joints_update(robots_joint_dict)
-	distance_inst.distance_check_all(robots_joint_dict)
+	robots_joint_dict_N={'sawyer':np.zeros((distance_inst.N_step,7)),'abb':np.zeros((distance_inst.N_step,6))}
+	distance_inst.distance_check_all_Nstep(robots_joint_dict_N)
 
 	
 
