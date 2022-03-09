@@ -1,4 +1,10 @@
 # Instruction
+![](images/tess_viewer.png)
+![](images/gazebo_setup.png)
+![](images/diagram.jpg)
+
+
+
 ## System
 Ubuntu (20.04) with ROS noetic
 wsl2 on win11 OK
@@ -46,11 +52,6 @@ export GAZEBO_PLUGIN_PATH=~/catkin_ws/devel/lib
 
 
 ## Running instructions
-
-
-`roscore` to start a roscore for gazebo
-
-`./start_gazebo` to start gazebo and RR_gazebo plugin only
 
 `./start_all` to start everything
 
