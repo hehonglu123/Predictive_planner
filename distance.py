@@ -4,16 +4,12 @@ from tesseract_robotics import tesseract_geometry
 from tesseract_robotics.tesseract_common import Isometry3d, CollisionMarginData
 from tesseract_robotics import tesseract_collision
 from tesseract_robotics_viewer import TesseractViewer
-import os
-import re
+
 import RobotRaconteur as RR
 RRN=RR.RobotRaconteurNode.s
-import yaml
+import yaml, time, traceback, threading, sys
 import numpy as np
-import time
-import traceback
-import threading
-import sys
+
 sys.path.append('toolbox')
 from gazebo_model_resource_locator import GazeboModelResourceLocator
 from robots_def import *
@@ -48,10 +44,11 @@ class Planner(object):
 		self.robot_toolbox={'sawyer':sawyer_robot,'abb':abb1200(R_tool=np.eye(3),p_tool=np.zeros(3))}
 
 		#Connect to robot service
-		# Sawyer= RRN.ConnectService('rr+tcp://localhost:58654?service=robot')
-		# ABB= RRN.ConnectService('rr+tcp://localhost:58655?service=robot')
-		# Sawyer_state=Sawyer.robot_state.Connect()
-		# ABB_state=ABB.robot_state.Connect()
+		Sawyer= RRN.ConnectService('rr+tcp://localhost:58654?service=robot')
+		ABB= RRN.ConnectService('rr+tcp://localhost:58655?service=robot')
+		Sawyer_state=Sawyer.robot_state.Connect()
+		ABB_state=ABB.robot_state.Connect()
+		self.robot_state={'sawyer':Sawyer_state,'abb':ABB_state}
 
 		#link and joint names in urdf
 		Sawyer_joint_names=["right_j0","right_j1","right_j2","right_j3","right_j4","right_j5","right_j6"]
@@ -63,7 +60,7 @@ class Planner(object):
 		self.robot_name_list=['sawyer','abb']
 		self.robot_linkname={'sawyer':Sawyer_link_names,'abb':ABB_link_names}
 		self.robot_jointname={'sawyer':Sawyer_joint_names,'abb':ABB_joint_names}
-		# self.robot_state={'sawyer':Sawyer_state,'abb':ABB_state}
+		
 
 		######tesseract environment setup:
 
@@ -82,9 +79,7 @@ class Planner(object):
 
 		self.t_env.applyCommand(cmd1)
 		self.t_env.applyCommand(cmd2)
-		
-		# self.scene_graph.changeJointOrigin("sawyer_pose", Isometry3d(H_Sawyer))
-		# self.scene_graph.changeJointOrigin("abb_pose", Isometry3d(H_ABB))
+
 
 		contact_distance=0.1
 		monitored_link_names = self.t_env.getLinkNames()
@@ -107,12 +102,11 @@ class Planner(object):
 		self.ts=0.1
 
 	def viewer_joints_update(self,robots_joint):
-
 		joint_names=[]
 		joint_values=[]
 		for key in robots_joint:
 			joint_names.extend(self.robot_jointname[key])
-			joint_values.extend(robots_joint[key])
+			joint_values.extend(robots_joint[key].tolist())
 
 		self.viewer.update_joint_positions(joint_names, np.array(joint_values))
 
@@ -131,10 +125,10 @@ class Planner(object):
 
 	def start(self):
 		self._running=True
-		self._checker = threading.Thread(target=self.distance_check_robot)
+		self._checker = threading.Thread(target=self.distance_check_background)
 		self._checker.daemon = True
 		self._checker.start()
-	def close(self):
+	def stop(self):
 		self._running = False
 		self._checker.join()
 
@@ -222,8 +216,16 @@ class Planner(object):
 				J2C_all_N[robot_name].append(J2C_all[robot_name])
 
 		# print(d_all_N,J2C_all_N)
+		print(self.robot_N_step['abb'])
 		return d_all_N,J2C_all_N
 
+	def distance_check_background(self):
+		while self._running:
+			with self._lock:
+				self.distance_check_all_Nstep(self.robot_N_step)
+
+	def state_prop_RR(self,robot_name,u_all):
+		self.state_prop(robot_name,u_all.reshape((self.N_step,len(self.robot_jointname[robot_name]))))
 	def state_prop(self,robot_name,u_all):
 		###update current real time joint position
 		self.robot_N_step[robot_name][0]=self.robot_state[robot_name].InValue.joint_position
@@ -282,25 +284,20 @@ class Planner(object):
 		return
 def main():
 
-	distance_inst=Planner()
-	robots_joint={'sawyer':np.array([0,-0.6,0,0,0,0,0]),'abb':np.array([ 0.64833199, 0.99963736,-0.99677272,-0.        , 1.56793168, 0.64833199])}
-	# robots_joint={'sawyer':np.zeros(7),'abb':np.zeros(6)}
-	distance_inst.viewer_joints_update(robots_joint)
-	# distance_inst.distance_check_all(robots_joint)
+	with RR.ServerNodeSetup("Planner_Node", 25522) as node_setup:
 
-	# with RR.ServerNodeSetup("Planner_Service", 25522) as node_setup:
-	# 	#register service file and service
-	# 	RRN.RegisterServiceTypeFromFile("../../robdef/edu.rpi.robotics.distance")
-	# 	distance_inst=create_impl()				#create obj
-	# 	# distance_inst.start()
-	# 	RRN.RegisterService("Environment","edu.rpi.robotics.distance.env",distance_inst)
-	# 	print("distance service started")
+		#register service file and service
+		RRN.RegisterServiceTypeFromFile("robdef/edu.rpi.robotics.planner")
+		planner_inst=Planner()				#create obj
+		
+		planner_inst.start()
+		RRN.RegisterService("Planner","edu.rpi.robotics.planner.planner",planner_inst)
+		print("planner service started")
 
+		input("Press enter to quit")
 
-	# 	input("Press enter to quit")
+		planner_inst.stop()
 	
-
-	input('press enter to quit')
 
 if __name__ == '__main__':
 	main()

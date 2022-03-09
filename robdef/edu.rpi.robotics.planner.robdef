@@ -1,0 +1,19 @@
+service edu.rpi.robotics.planner
+
+stdver 0.9
+
+struct transformation
+    field int8 row
+    field int8 column
+    field string name
+    field single[] H
+end
+
+object planner
+    property int8 N_step
+
+	function void move2(string robot, double[] qd)
+    function void viewer_joints_update(double[]{string} robots_joint)
+    function void state_prop_RR(string robot_name, double[] u_all)
+
+end
