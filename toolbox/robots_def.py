@@ -115,7 +115,7 @@ class abb1200(object):
 
 class arb_robot(object):
 	#R_tool make tool z pointing to +x at 0 config
-	def __init__(self, H,P,joint_type,upper_limit,lowerer_limit, joint_vel_limit,R_tool=Ry(np.radians(90)),p_tool=np.zeros(3)):
+	def __init__(self, H,P,joint_type,upper_limit,lowerer_limit, joint_vel_limit,R_tool=Ry(np.radians(90)),p_tool=np.zeros(3),d=0):
 		###All in mm
 		self.H=H
 		self.P=P

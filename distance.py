@@ -48,10 +48,10 @@ class Planner(object):
 		self.robot_toolbox={'sawyer':sawyer_robot,'abb':abb1200(R_tool=np.eye(3),p_tool=np.zeros(3))}
 
 		#Connect to robot service
-		Sawyer= RRN.ConnectService('rr+tcp://localhost:58654?service=robot')
-		ABB= RRN.ConnectService('rr+tcp://localhost:58655?service=robot')
-		Sawyer_state=Sawyer.robot_state.Connect()
-		ABB_state=ABB.robot_state.Connect()
+		# Sawyer= RRN.ConnectService('rr+tcp://localhost:58654?service=robot')
+		# ABB= RRN.ConnectService('rr+tcp://localhost:58655?service=robot')
+		# Sawyer_state=Sawyer.robot_state.Connect()
+		# ABB_state=ABB.robot_state.Connect()
 
 		#link and joint names in urdf
 		Sawyer_joint_names=["right_j0","right_j1","right_j2","right_j3","right_j4","right_j5","right_j6"]
@@ -63,7 +63,7 @@ class Planner(object):
 		self.robot_name_list=['sawyer','abb']
 		self.robot_linkname={'sawyer':Sawyer_link_names,'abb':ABB_link_names}
 		self.robot_jointname={'sawyer':Sawyer_joint_names,'abb':ABB_joint_names}
-		self.robot_state={'sawyer':Sawyer_state,'abb':ABB_state}
+		# self.robot_state={'sawyer':Sawyer_state,'abb':ABB_state}
 
 		######tesseract environment setup:
 
@@ -103,7 +103,7 @@ class Planner(object):
 
 		##########N step planner predicted joint configs#################
 		self.robot_N_step={'sawyer':np.zeros((self.N_step+1,7)),'abb':np.zeros((self.N_step+1,6))} #0 to N_step
-		self.u_all={'sawyer'::np.zeros((self.N_step,7)),'abb':np.zeros((self.N_step,6))} #0 to N_step-1 control input qdot
+		self.u_all={'sawyer':np.zeros((self.N_step,7)),'abb':np.zeros((self.N_step,6))} #0 to N_step-1 control input qdot
 		self.ts=0.1
 
 	def viewer_joints_update(self,robots_joint):
@@ -233,7 +233,7 @@ class Planner(object):
 			self.robot_N_step[robot_name][i]=self.robot_N_step[robot_name][i-1]+self.ts*self.u_all[robot_name][i-1]
 
 	def dfdx(self,robot_name,u,J2C):
-		
+		return
 	def trajgrad_k(self,k,robot_name,u_all,J2C):
 		for i in range(k):
 			A,B=self.grad_fu(robot_name,self.robot_N_step[robot_name][i+1],u_all[i],J2C)
@@ -259,8 +259,8 @@ class Planner(object):
 		time.sleep(0.1)###wait for thread updates q_all
 		for k in range(self.N_step):
 			if np.linalg.norm(self.d_all_N[robot_name])!=0:
-				Aineq(k-1,:)=-d*grad_d_x*J_subk
-            	Bineq(k-1)=0
+				Aineq[k-1]=-d*grad_d_x*J_subk
+				Bineq[k-1]=0
 
 
 
@@ -277,26 +277,27 @@ class Planner(object):
 			now=time.time()
 			while time.time()-now<self.ts:
 				###move with qdot
+				print('moving')
 
 		return
 def main():
 
 	distance_inst=Planner()
-	# robots_joint={'sawyer':np.array([0,-0.6,0,0,0,0,0]),'abb':np.array([ 0.14833199, 0.99963736,-0.99677272,-0.        , 1.56793168, 0.64833199])}
-	# # robots_joint={'sawyer':np.zeros(7),'abb':np.zeros(6)}
-	# distance_inst.viewer_joints_update(robots_joint)
+	robots_joint={'sawyer':np.array([0,-0.6,0,0,0,0,0]),'abb':np.array([ 0.64833199, 0.99963736,-0.99677272,-0.        , 1.56793168, 0.64833199])}
+	# robots_joint={'sawyer':np.zeros(7),'abb':np.zeros(6)}
+	distance_inst.viewer_joints_update(robots_joint)
 	# distance_inst.distance_check_all(robots_joint)
 
-	with RR.ServerNodeSetup("Planner_Service", 25522) as node_setup:
-		#register service file and service
-		RRN.RegisterServiceTypeFromFile("../../robdef/edu.rpi.robotics.distance")
-		distance_inst=create_impl()				#create obj
-		# distance_inst.start()
-		RRN.RegisterService("Environment","edu.rpi.robotics.distance.env",distance_inst)
-		print("distance service started")
+	# with RR.ServerNodeSetup("Planner_Service", 25522) as node_setup:
+	# 	#register service file and service
+	# 	RRN.RegisterServiceTypeFromFile("../../robdef/edu.rpi.robotics.distance")
+	# 	distance_inst=create_impl()				#create obj
+	# 	# distance_inst.start()
+	# 	RRN.RegisterService("Environment","edu.rpi.robotics.distance.env",distance_inst)
+	# 	print("distance service started")
 
 
-		input("Press enter to quit")
+	# 	input("Press enter to quit")
 	
 
 	input('press enter to quit')
