@@ -16,6 +16,7 @@ import threading
 import sys
 sys.path.append('toolbox')
 from gazebo_model_resource_locator import GazeboModelResourceLocator
+from robots_def import *
 
 #convert 4x4 H matrix to 3x3 H matrix and inverse for mapping obj to robot frame
 def H42H3(H):
@@ -41,11 +42,16 @@ class Planner(object):
 
 		self.transformation={'sawyer':H_Sawyer,'abb':H_ABB}
 
+		################kinematics tools##################################################
+		with open('config/sawyer_robot_default_config.yml') as file:
+			sawyer_robot=yml2robdef(file)
+		self.robot_toolbox={'sawyer':sawyer_robot,'abb':abb1200(R_tool=np.eye(3),p_tool=np.zeros(3))}
+
 		#Connect to robot service
-		# Sawyer= RRN.ConnectService('rr+tcp://localhost:58654?service=robot')
-		# ABB= RRN.ConnectService('rr+tcp://localhost:58655?service=robot')
-		# Sawyer_state=Sawyer.robot_state.Connect()
-		# ABB_state=ABB.robot_state.Connect()
+		Sawyer= RRN.ConnectService('rr+tcp://localhost:58654?service=robot')
+		ABB= RRN.ConnectService('rr+tcp://localhost:58655?service=robot')
+		Sawyer_state=Sawyer.robot_state.Connect()
+		ABB_state=ABB.robot_state.Connect()
 
 		#link and joint names in urdf
 		Sawyer_joint_names=["right_j0","right_j1","right_j2","right_j3","right_j4","right_j5","right_j6"]
@@ -55,9 +61,9 @@ class Planner(object):
 
 		
 		self.robot_name_list=['sawyer','abb']
-		self.robot_linkname_dict={'sawyer':Sawyer_link_names,'abb':ABB_link_names}
-		self.robot_jointname_dict={'sawyer':Sawyer_joint_names,'abb':ABB_joint_names}
-		# self.robot_state_dict=['sawyer':Sawyer_state,'abb':ABB_state]
+		self.robot_linkname={'sawyer':Sawyer_link_names,'abb':ABB_link_names}
+		self.robot_jointname={'sawyer':Sawyer_joint_names,'abb':ABB_joint_names}
+		self.robot_state={'sawyer':Sawyer_state,'abb':ABB_state}
 
 		######tesseract environment setup:
 
@@ -94,13 +100,19 @@ class Planner(object):
 
 		self.viewer.start_serve_background()
 
-	def viewer_joints_update(self,robots_joint_dict):
+
+		##########N step planner predicted joint configs#################
+		self.robot_N_step={'sawyer':np.zeros((self.N_step+1,7)),'abb':np.zeros((self.N_step+1,6))} #0 to N_step
+		self.u_all={'sawyer'::np.zeros((self.N_step,7)),'abb':np.zeros((self.N_step,6))} #0 to N_step-1 control input qdot
+		self.ts=0.1
+
+	def viewer_joints_update(self,robots_joint):
 
 		joint_names=[]
 		joint_values=[]
-		for key in robots_joint_dict:
-			joint_names.extend(self.robot_jointname_dict[key])
-			joint_values.extend(robots_joint_dict[key])
+		for key in robots_joint:
+			joint_names.extend(self.robot_jointname[key])
+			joint_values.extend(robots_joint[key])
 
 		self.viewer.update_joint_positions(joint_names, np.array(joint_values))
 
@@ -126,15 +138,15 @@ class Planner(object):
 		self._running = False
 		self._checker.join()
 
-	def distance_check_all(self,robots_joint_dict):
+	def distance_check_all(self,robots_joint):
 		#return collision vector d_all and Joint to collision J2C_all (count from 0) #
 
 		###update collision robot joint configuration
 		joint_names=[]
 		joint_values=[]
-		for key in robots_joint_dict:
-			joint_names.extend(self.robot_jointname_dict[key])
-			joint_values.extend(robots_joint_dict[key])
+		for key in robots_joint:
+			joint_names.extend(self.robot_jointname[key])
+			joint_values.extend(robots_joint[key])
 
 		self.t_env.setState(joint_names, np.array(joint_values))
 
@@ -166,23 +178,23 @@ class Planner(object):
 		for i in range(len(distances)):
 			for robot_name in self.robot_name_list:
 				###make sure only 1 of robot link in collision objects
-				if names[i][0] in self.robot_linkname_dict[robot_name] and names[i][1] not in self.robot_linkname_dict[robot_name]:
+				if names[i][0] in self.robot_linkname[robot_name] and names[i][1] not in self.robot_linkname[robot_name]:
 					if min_distance[robot_name]>distances[i]:
 						d_all[robot_name]=nearest_points[i][1]-nearest_points[i][0]
 						if robot_name=='sawyer':
-							J2C_all[robot_name]=self.Sawyer_link(self.robot_linkname_dict[robot_name].index(names[i][0]))
+							J2C_all[robot_name]=self.Sawyer_link(self.robot_linkname[robot_name].index(names[i][0]))
 						else:
-							J2C_all[robot_name]=self.robot_linkname_dict[robot_name].index(names[i][0])
+							J2C_all[robot_name]=self.robot_linkname[robot_name].index(names[i][0])
 						min_distance[robot_name]=distances[i]
 						min_idx[robot_name]=i
 
-				if names[i][0] not in self.robot_linkname_dict[robot_name] and names[i][1] in self.robot_linkname_dict[robot_name]:
+				if names[i][0] not in self.robot_linkname[robot_name] and names[i][1] in self.robot_linkname[robot_name]:
 					if min_distance[robot_name]>distances[i]:
 						d_all[robot_name]=nearest_points[i][0]-nearest_points[i][1]
 						if robot_name=='sawyer':
-							J2C_all[robot_name]=self.Sawyer_link(self.robot_linkname_dict[robot_name].index(names[i][0]))
+							J2C_all[robot_name]=self.Sawyer_link(self.robot_linkname[robot_name].index(names[i][0]))
 						else:
-							J2C_all[robot_name]=self.robot_linkname_dict[robot_name].index(names[i][1])
+							J2C_all[robot_name]=self.robot_linkname[robot_name].index(names[i][1])
 						min_distance[robot_name]=distances[i]
 						min_idx[robot_name]=i
 
@@ -193,7 +205,7 @@ class Planner(object):
 		# print(d_all,J2C_all,min_distance['sawyer'])
 		return d_all,J2C_all
 
-	def distance_check_all_Nstep(self,robots_joint_dict_N):
+	def distance_check_all_Nstep(self,robots_joint_N):
 		d_all_N={}
 		J2C_all_N={}
 		for robot_name in self.robot_name_list:
@@ -201,10 +213,10 @@ class Planner(object):
 			J2C_all_N[robot_name]=[]
 		for i in range(self.N_step):
 			#check collision at ith step
-			robots_joint_dict={}
+			robots_joint={}
 			for robot_name in self.robot_name_list:
-				robots_joint_dict[robot_name]=robots_joint_dict_N[robot_name][i]
-			d_all,J2C_all=self.distance_check_all(robots_joint_dict)
+				robots_joint[robot_name]=robots_joint_N[robot_name][i]
+			d_all,J2C_all=self.distance_check_all(robots_joint)
 			for robot_name in self.robot_name_list:
 				d_all_N[robot_name].append(d_all[robot_name])
 				J2C_all_N[robot_name].append(J2C_all[robot_name])
@@ -212,18 +224,79 @@ class Planner(object):
 		# print(d_all_N,J2C_all_N)
 		return d_all_N,J2C_all_N
 
+	def state_prop(self,robot_name,u_all):
+		###update current real time joint position
+		self.robot_N_step[robot_name][0]=self.robot_state[robot_name].InValue.joint_position
+		###update N_step control input
+		self.u_all[robot_name]=u_all
+		for i in range(1,self.N_step+1):
+			self.robot_N_step[robot_name][i]=self.robot_N_step[robot_name][i-1]+self.ts*self.u_all[robot_name][i-1]
 
+	def dfdx(self,robot_name,u,J2C):
+		
+	def trajgrad_k(self,k,robot_name,u_all,J2C):
+		for i in range(k):
+			A,B=self.grad_fu(robot_name,self.robot_N_step[robot_name][i+1],u_all[i],J2C)
+	def grad_fu(self,robot_name,q,u,J2C):
+		A=np.eye(3)+self.ts*self.dfdx(robot_name,u,J2C)
+		B=self.robot_toolbox[robot_name].jacobian(q)*self.ts
+		return A, B
+
+	##############multi step planner, return instantaneous q_dot for execution#############
+	def plan(self,robot_name,qd):
+		##############################u_all, trajectory N_step initialization#####################################
+		if np.linalg.norm(self.u_all[robot_name][0])==0:
+			###initialize random control input toward desired direction
+			q_cur=self.robot_state[robot_name].InValue.joint_position
+			u_temp=0.2*(qd-q_cur)/np.linalg.norm(qd-q_cur)
+			u_all=np.tile(u_temp,(self.N_step,1))
+			self.state_prop(robot_name,u_all)
+		else:
+			###pick up from previous iteration
+			u_all=np.append(self.u_all[robot_name][1:],self.u_all[robot_name][-1])
+			self.state_prop(robot_name,u_all)
+		##############################################form collision constraint####################################
+		time.sleep(0.1)###wait for thread updates q_all
+		for k in range(self.N_step):
+			if np.linalg.norm(self.d_all_N[robot_name])!=0:
+				Aineq(k-1,:)=-d*grad_d_x*J_subk
+            	Bineq(k-1)=0
+
+
+
+		##############################################solve QP#####################################################
+
+
+		################update N_step properties##############################################
+		self.state_prop(robot_name,u_all_new)
+
+	def move2(self,robot_name,qd):
+		###calls planner, execute 1 step output
+		while np.linalg.norm(self.robot_state[robot_name]-qd)<0.1:
+			qdot=self.plan(robot_name,qd)
+			now=time.time()
+			while time.time()-now<self.ts:
+				###move with qdot
+
+		return
 def main():
 
 	distance_inst=Planner()
-	# robots_joint_dict={'sawyer':np.array([0,-0.6,0,0,0,0,0]),'abb':np.array([ 0.14833199, 0.99963736,-0.99677272,-0.        , 1.56793168, 0.64833199])}
-	# # robots_joint_dict={'sawyer':np.zeros(7),'abb':np.zeros(6)}
-	# distance_inst.viewer_joints_update(robots_joint_dict)
-	# distance_inst.distance_check_all(robots_joint_dict)
+	# robots_joint={'sawyer':np.array([0,-0.6,0,0,0,0,0]),'abb':np.array([ 0.14833199, 0.99963736,-0.99677272,-0.        , 1.56793168, 0.64833199])}
+	# # robots_joint={'sawyer':np.zeros(7),'abb':np.zeros(6)}
+	# distance_inst.viewer_joints_update(robots_joint)
+	# distance_inst.distance_check_all(robots_joint)
 
-	robots_joint_dict_N={'sawyer':np.zeros((distance_inst.N_step,7)),'abb':np.zeros((distance_inst.N_step,6))}
-	distance_inst.distance_check_all_Nstep(robots_joint_dict_N)
+	with RR.ServerNodeSetup("Planner_Service", 25522) as node_setup:
+		#register service file and service
+		RRN.RegisterServiceTypeFromFile("../../robdef/edu.rpi.robotics.distance")
+		distance_inst=create_impl()				#create obj
+		# distance_inst.start()
+		RRN.RegisterService("Environment","edu.rpi.robotics.distance.env",distance_inst)
+		print("distance service started")
 
+
+		input("Press enter to quit")
 	
 
 	input('press enter to quit')
@@ -231,19 +304,7 @@ def main():
 if __name__ == '__main__':
 	main()
 
-# with RR.ServerNodeSetup("Distance_Service", 25522) as node_setup:
-# 	#register service file and service
-# 	RRN.RegisterServiceTypeFromFile("../../robdef/edu.rpi.robotics.distance")
-# 	distance_inst=create_impl()				#create obj
-# 	# distance_inst.start()
-# 	RRN.RegisterService("Environment","edu.rpi.robotics.distance.env",distance_inst)
-# 	print("distance service started")
 
-# 	# time.sleep(1)	
-# 	# print(distance_inst.distance_matrix.reshape(distance_inst.num_robot,distance_inst.num_robot))
-
-
-# 	input("Press enter to quit")
 
 
 
