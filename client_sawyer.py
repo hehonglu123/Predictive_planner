@@ -2,15 +2,20 @@
 from RobotRaconteur.Client import *
 import yaml, time, traceback, threading, sys
 import numpy as np
+sys.path.append('toolbox')
+
+from vel_emulate_sub import EmulatedVelocityControl
 
 ###connect to all RR services
 Sawyer= RRN.ConnectService('rr+tcp://localhost:58654?service=robot')
-ABB= RRN.ConnectService('rr+tcp://localhost:58655?service=robot')
 planner_inst=RRN.ConnectService('rr+tcp://localhost:25522/?service=Planner')
 
-Sawyer_state=Sawyer.robot_state.Connect()
-ABB_state=ABB.robot_state.Connect()
-robot_state={'sawyer':Sawyer_state,'abb':ABB_state}
+sawyer_sub=RRN.SubscribeService('rr+tcp://localhost:58654?service=robot')
+state_w = sawyer_sub.SubscribeWire("robot_state")
+cmd_w=sawyer_sub.SubscribeWire('position_command')
+Sawyer=sawyer_sub.GetDefaultClientWait(1)
+
+vel_ctrl = EmulatedVelocityControl(Sawyer,state_w, cmd_w)
 
 ###RR constants
 robot_const = RRN.GetConstants("com.robotraconteur.robotics.robot", Sawyer)
@@ -23,18 +28,26 @@ velocity_mode = robot_const["RobotCommandMode"]["velocity_command"]
 
 ###Command mode 
 Sawyer.command_mode = halt_mode
-ABB.command_mode = halt_mode
 time.sleep(0.1)
 Sawyer.command_mode = jog_mode
-ABB.command_mode = jog_mode
 
-start_joint_abb=np.array([ 0.44833199, 0.99963736,-0.99677272,-0.        , 1.56793168, 0.64833199])
 start_joint_sawyer=np.array([0,-0.6,0,0,0,0,0])
-ABB.jog_freespace(start_joint_abb,np.ones(6),True)
 Sawyer.jog_freespace(start_joint_sawyer,np.ones(7),True)
 
-####initialize robot joints to a specific config
-robots_joint={'sawyer':start_joint_sawyer,'abb':start_joint_abb}
-planner_inst.viewer_joints_update(robots_joint)
-planner_inst.state_prop_RR('sawyer',np.zeros(planner_inst.N_step*7))
-planner_inst.state_prop_RR('abb',np.zeros(planner_inst.N_step*6))
+###Command mode 
+Sawyer.command_mode = halt_mode
+time.sleep(0.1)
+Sawyer.command_mode = position_mode
+
+
+vel_ctrl.enable_velocity_mode()
+qd=np.array([1,-0.6,0,0,0,0,0])
+while np.linalg.norm(state_w.InValue.joint_position-qd)>0.1:
+	qdot=planner_inst.plan('sawyer',qd)
+	print(qdot)
+	now=time.time()
+	while time.time()-now<planner_inst.ts:
+		vel_ctrl.set_velocity_command(qdot)
+
+vel_ctrl.set_velocity_command(np.zeros((7,)))
+vel_ctrl.disable_velocity_mode()

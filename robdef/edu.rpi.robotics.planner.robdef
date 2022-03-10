@@ -11,9 +11,9 @@ end
 
 object planner
     property int8 N_step
-
-	function void move2(string robot, double[] qd)
+    property double ts
+	function double[] plan(string robot_name, double[] qd)
     function void viewer_joints_update(double[]{string} robots_joint)
-    function void state_prop_RR(string robot_name, double[] u_all)
+    function void state_prop(string robot_name, double[] u_all)
 
 end
