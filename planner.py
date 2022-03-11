@@ -208,12 +208,13 @@ class Planner(object):
 		return d_all,J2C_all
 
 	def distance_check_all_Nstep(self,robots_joint_N):
+
 		d_all_N={}
 		J2C_all_N={}
 		for robot_name in self.robot_name_list:
 			d_all_N[robot_name]=[]
 			J2C_all_N[robot_name]=[]
-		for i in range(self.N_step):
+		for i in range(len(robots_joint_N[self.robot_name_list[0]])):
 			#check collision at ith step
 			robots_joint={}
 			for robot_name in self.robot_name_list:
@@ -227,9 +228,10 @@ class Planner(object):
 		return d_all_N,J2C_all_N
 
 	def distance_check_background(self):
+		###collision checker, 1 current + future N collision check
 		while self._running:
 			with self._lock:
-				self.distance_check_all_Nstep(self.robot_N_step)
+				self.d_all_N,self.J2C_all_N=self.distance_check_all_Nstep(self.robot_N_step)
 
 
 	def state_prop(self,robot_name,u_all):
@@ -240,15 +242,10 @@ class Planner(object):
 		for i in range(1,self.N_step+1):
 			self.robot_N_step[robot_name][i]=self.robot_N_step[robot_name][i-1]+self.ts*self.u_all[robot_name][(i-1)*len(self.robot_jointname[robot_name]):i*len(self.robot_jointname[robot_name])]
 
-	def dfdx(self,robot_name,u,J2C):
-		return
 	def trajgrad_k(self,k,robot_name,u_all,J2C):
 		for i in range(k):
 			A,B=self.grad_fu(robot_name,self.robot_N_step[robot_name][i+1],u_all[i],J2C)
-	def grad_fu(self,robot_name,q,u,J2C):
-		A=np.eye(3)+self.ts*self.dfdx(robot_name,u,J2C)
-		B=self.robot_toolbox[robot_name].jacobian(q)*self.ts
-		return A, B
+
 
 	##############multi step planner, return instantaneous q_dot for execution#############
 	def plan(self,robot_name,qd):
@@ -264,27 +261,40 @@ class Planner(object):
 			u_all=np.append(self.u_all[robot_name][len(self.robot_jointname[robot_name]):],self.u_all[robot_name][-len(self.robot_jointname[robot_name]):])
 			self.state_prop(robot_name,u_all)
 		##############################################form collision constraint####################################
-		time.sleep(0.1)###wait for thread updates q_all
-		# for k in range(self.N_step):
-		# 	if np.linalg.norm(self.d_all_N[robot_name])!=0:
-		# 		Aineq[k-1]=-d*grad_d_x*J_subk
-		# 		Bineq[k-1]=0
+		try:
+			Aineq=np.zeros((self.N_step,len(self.robot_jointname[robot_name])*self.N_step))
+			bineq=np.zeros(self.N_step)
+			time.sleep(0.01)###wait for thread updates q_all
+			for k in range(1,self.N_step+1):
+				if np.linalg.norm(self.d_all_N[robot_name][k])!=0:
+					J2C=self.J2C_all_N[robot_name][k]												#get kth step joint to collision
+					print(robot_name,np.linalg.norm(self.d_all_N[robot_name][k]),'J2C',J2C,'step',k)
+					Jacobian2C=self.robot_toolbox[robot_name].jacobian(self.robot_N_step[robot_name][k])[:,:J2C+1]						#get the jacobian to that joint
+					d_col=self.d_all_N[robot_name][k]
+					d_col_6=np.append(d_col,np.zeros(3))
+					d_q=np.dot(np.linalg.pinv(Jacobian2C),d_col_6)		##convert collision vector d to joint space
+					d_q=np.append(d_q,np.zeros(len(self.robot_jointname[robot_name])-len(d_q)))		##leave joints after J2C zero
+					J_k=np.tile(np.eye(len(self.robot_jointname[robot_name])),(1,k))
+					J_k=np.hstack((J_k,np.tile(np.zeros((len(self.robot_jointname[robot_name]),len(self.robot_jointname[robot_name]))),(1,self.N_step-k))))
+					Aineq[k-1,:]=np.dot(d_q,J_k)
+					print(d_q)
+					# bineq[k-1]=0
 
 		############################################q constraint################################################
 
 
 		############################################qdot constraint################################################
-		vel_limit=np.tile(self.robot_toolbox[robot_name].joint_vel_limit,(self.N_step,1)).flatten()
+			vel_limit=np.tile(self.robot_toolbox[robot_name].joint_vel_limit,(self.N_step,1)).flatten()
 
 
 		##############################################solve QP#####################################################
-		try:
+		
 			eps=0.05
 			J=np.tile(np.eye(len(self.robot_jointname[robot_name])),(1,self.N_step))
 			Kp=1*np.eye(len(self.robot_jointname[robot_name]))
 			H=np.dot(J.T,J)+eps*np.eye(self.N_step*len(self.robot_jointname[robot_name]))
 			F=np.dot(J.T,np.dot(Kp,self.robot_N_step[robot_name][-1]-qd))
-			du_all=solve_qp(H,F,lb=-vel_limit-u_all, ub=vel_limit-u_all)
+			du_all=solve_qp(H,F,G=Aineq,h=bineq,lb=-vel_limit-u_all, ub=vel_limit-u_all)
 			u_all_new=u_all+du_all
 		except:
 			traceback.print_exc()

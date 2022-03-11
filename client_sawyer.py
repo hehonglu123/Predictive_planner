@@ -41,7 +41,7 @@ Sawyer.command_mode = position_mode
 
 
 vel_ctrl.enable_velocity_mode()
-qd=np.array([1,-0.6,0,0,0,0,0])
+qd=np.array([-2,-0.6,0,0,0,0,0])
 while np.linalg.norm(state_w.InValue.joint_position-qd)>0.1:
 	qdot=planner_inst.plan('sawyer',qd)
 	print(qdot)
