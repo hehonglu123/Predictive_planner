@@ -13,6 +13,7 @@ object planner
     property int8 N_step
     property double ts
 	function double[] plan(string robot_name, double[] qd)
+    function double[] plan_initial(string robot_name, double[] qd, uint8 Niter)
     function void viewer_joints_update(double[]{string} robots_joint)
     function void state_prop(string robot_name, double[] u_all)
 

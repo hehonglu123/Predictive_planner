@@ -31,7 +31,7 @@ Sawyer.command_mode = halt_mode
 time.sleep(0.1)
 Sawyer.command_mode = jog_mode
 
-start_joint_sawyer=np.array([0,-0.6,0,0,0,0,0])
+start_joint_sawyer=np.array([0,-0.3,0,0,0,0,0])
 Sawyer.jog_freespace(start_joint_sawyer,np.ones(7),True)
 
 ###Command mode 
@@ -42,6 +42,7 @@ Sawyer.command_mode = position_mode
 
 vel_ctrl.enable_velocity_mode()
 qd=np.array([-2,-0.6,0,0,0,0,0])
+planner_inst.plan_initial('sawyer',qd,100)
 while np.linalg.norm(state_w.InValue.joint_position-qd)>0.1:
 	qdot=planner_inst.plan('sawyer',qd)
 	print(qdot)
