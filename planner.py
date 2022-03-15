@@ -10,6 +10,7 @@ RRN=RR.RobotRaconteurNode.s
 import yaml, time, traceback, threading, sys
 import numpy as np
 from qpsolvers import solve_qp
+from scipy.optimize import fminbound
 
 sys.path.append('toolbox')
 from gazebo_model_resource_locator import GazeboModelResourceLocator
@@ -27,8 +28,10 @@ class Planner(object):
 		self._lock=threading.RLock()
 		self._running=False
 
-		###look ahead steps
+		###look ahead steps and timestep
 		self.N_step=1
+		self.ts=0.1
+
 		#load calibration parameters
 		with open('calibration/Sawyer.yaml') as file:
 			H_Sawyer 	= np.array(yaml.load(file)['H'],dtype=np.float64)
@@ -107,8 +110,7 @@ class Planner(object):
 		##########N step planner predicted joint configs#################
 		self.robot_N_step={'sawyer':np.zeros((self.N_step+1,7)),'abb':np.zeros((self.N_step+1,6))} #0 to N_step
 		self.u_all={'sawyer':np.zeros(self.N_step*7),'abb':np.zeros(self.N_step*6)} #0 to N_step-1 control input qdot
-		self.ts=0.01
-
+		
 	def viewer_joints_update(self,robots_joint):
 		joint_names=[]
 		joint_values=[]
@@ -205,27 +207,29 @@ class Planner(object):
 			d_all[robot_name]=np.dot(self.transformation[robot_name][:-1,:-1],d_all[robot_name])
 
 		# print(d_all,J2C_all,min_distance['sawyer'])
-		return d_all,J2C_all
+		return d_all,J2C_all,min_distance
 
 	def distance_check_all_Nstep(self,robots_joint_N):
-
 		d_all_N={}
 		J2C_all_N={}
+		min_distance_all_N={}
 		for robot_name in self.robot_name_list:
 			d_all_N[robot_name]=[]
 			J2C_all_N[robot_name]=[]
+			min_distance_all_N[robot_name]=[]
 		for i in range(len(robots_joint_N[self.robot_name_list[0]])):
 			#check collision at ith step
 			robots_joint={}
 			for robot_name in self.robot_name_list:
 				robots_joint[robot_name]=robots_joint_N[robot_name][i]
-			d_all,J2C_all=self.distance_check_all(robots_joint)
+			d_all,J2C_all,min_distance_all=self.distance_check_all(robots_joint)
 			for robot_name in self.robot_name_list:
 				d_all_N[robot_name].append(d_all[robot_name])
 				J2C_all_N[robot_name].append(J2C_all[robot_name])
+				min_distance_all_N[robot_name].append(min_distance_all[robot_name])
 
 		# print(d_all_N,J2C_all_N)
-		return d_all_N,J2C_all_N
+		return d_all_N,J2C_all_N,min_distance_all_N
 
 	def distance_check_background(self):
 		now=time.time()		###running @ 500~1000Hz
@@ -234,7 +238,7 @@ class Planner(object):
 			with self._lock:
 				# print(1/(time.time()-now))
 				# now=time.time()
-				self.d_all_N,self.J2C_all_N=self.distance_check_all_Nstep(self.robot_N_step)
+				self.d_all_N,self.J2C_all_N,self.min_distance_all_N=self.distance_check_all_Nstep(self.robot_N_step)
 
 
 	def state_prop(self,robot_name,u_all):
@@ -249,14 +253,30 @@ class Planner(object):
 		for i in range(k):
 			A,B=self.grad_fu(robot_name,self.robot_N_step[robot_name][i+1],u_all[i],J2C)
 
+	def sigmafun(self,x):
+		a=5;b=3;e=0.00006;l=1;
+		return np.divide(a*b*(x-e),l+b*(x-e))
 
+	###line search with qp
+	def search_func(self,alpha,robot_name,qd,u_all,du_all):
+		q_cur=self.robot_state[robot_name].InValue.joint_position
+		qf=q_cur+np.sum(self.ts*(u_all+alpha*du_all).reshape((len(self.robot_jointname[robot_name]),-1)),axis=1)
+		return np.linalg.norm(qf-qd)
+
+	def d_col2q_col(self,d_col,jac):
+		###convert collision vector from cartesian space to joint space
+		H=np.dot(jac.T,jac)
+		f=np.dot(d_col,jac)
+		d_q=solve_qp(H,f)
+		return d_q
 	##############multi step planner, return instantaneous q_dot for execution#############
 	def plan_initial(self,robot_name,qd,Niter):
 		###iterate a few times before execution
 		###initialize random control input toward desired direction
 		q_cur=self.robot_state[robot_name].InValue.joint_position
 		u_temp=0.2*(qd-q_cur)/np.linalg.norm(qd-q_cur)
-		u_all=np.tile(u_temp,(self.N_step,1)).flatten()
+		# u_all=np.tile(u_temp,(self.N_step,1)).flatten()
+		u_all=np.zeros(len(self.robot_jointname[robot_name])*self.N_step)
 		self.state_prop(robot_name,u_all)
 
 		for i in range(Niter):
@@ -268,23 +288,25 @@ class Planner(object):
 				for k in range(1,self.N_step+1):
 					if np.linalg.norm(self.d_all_N[robot_name][k])!=0:
 						J2C=self.J2C_all_N[robot_name][k]												#get kth step joint to collision
-						print(robot_name,np.linalg.norm(self.d_all_N[robot_name][k]),'J2C',J2C,'step',k)
 						Jacobian2C=self.robot_toolbox[robot_name].jacobian(self.robot_N_step[robot_name][k])[:,:J2C+1]						#get the jacobian to that joint
-						d_col=self.d_all_N[robot_name][k]
-						d_col_6=np.append(d_col,np.zeros(3))
-						d_q=np.dot(np.linalg.pinv(Jacobian2C),d_col_6)		##convert collision vector d to joint space
+						min_distance=self.min_distance_all_N[robot_name][k]
+						print(robot_name,min_distance,'J2C',J2C,'step',k)
+						d_col=self.d_all_N[robot_name][k]*np.sign(min_distance)
+						d_q=np.dot(np.linalg.pinv(Jacobian2C[3:]),d_col)		##convert collision vector d to joint space
+						# d_q=self.d_col2q_col(d_col,Jacobian2C[3:])
 						d_q=np.append(d_q,np.zeros(len(self.robot_jointname[robot_name])-len(d_q)))		##leave joints after J2C zero
 						J_k=np.tile(np.eye(len(self.robot_jointname[robot_name])),(1,k))
 						J_k=np.hstack((J_k,np.tile(np.zeros((len(self.robot_jointname[robot_name]),len(self.robot_jointname[robot_name]))),(1,self.N_step-k))))
 						Aineq[k-1,:]=np.dot(d_q,J_k)
-						# bineq[k-1]=0
+						# bineq[k-1]=self.sigmafun(min_distance)
 
 			############################################q constraint################################################
 
 
 			############################################qdot constraint################################################
-				vel_limit=np.tile(self.robot_toolbox[robot_name].joint_vel_limit,(self.N_step,1)).flatten()
-
+				vel_limit=np.tile(self.robot_toolbox[robot_name].joint_vel_limit,(self.N_step,1)).flatten()/2
+				if robot_name=='abb':
+					vel_limit=np.tile(self.robot_toolbox[robot_name].joint_vel_limit,(self.N_step,1)).flatten()/10
 
 			##############################################solve QP#####################################################
 			
@@ -294,7 +316,9 @@ class Planner(object):
 				H=np.dot(J.T,J)+eps*np.eye(self.N_step*len(self.robot_jointname[robot_name]))
 				F=np.dot(J.T,np.dot(Kp,self.robot_N_step[robot_name][-1]-qd))
 				du_all=solve_qp(H,F,G=Aineq,h=bineq,lb=-vel_limit-u_all, ub=vel_limit-u_all)
-				u_all=u_all+du_all
+				alpha=fminbound(self.search_func,0,1,args=(robot_name,qd,u_all,du_all,))
+				# print(alpha)
+				u_all_new=u_all+alpha*du_all
 			except:
 				traceback.print_exc()
 			################update N_step properties##############################################
@@ -305,6 +329,7 @@ class Planner(object):
 
 	##############multi step planner, return instantaneous q_dot for execution#############
 	def plan(self,robot_name,qd):
+		###TODO: change dq to collision vector at different future step, 
 		#running @ 40Hz
 		# now=time.time()
 		##############################u_all, trajectory N_step initialization#####################################
@@ -316,7 +341,8 @@ class Planner(object):
 			self.state_prop(robot_name,u_all)
 		else:
 			###pick up from previous iteration
-			u_all=np.append(self.u_all[robot_name][len(self.robot_jointname[robot_name]):],self.u_all[robot_name][-len(self.robot_jointname[robot_name]):])
+			# u_all=np.append(self.u_all[robot_name][len(self.robot_jointname[robot_name]):],self.u_all[robot_name][-len(self.robot_jointname[robot_name]):])
+			u_all=np.append(self.u_all[robot_name][len(self.robot_jointname[robot_name]):],np.zeros(len(self.robot_jointname[robot_name])))
 			self.state_prop(robot_name,u_all)
 
 		time.sleep(0.01)
@@ -328,22 +354,27 @@ class Planner(object):
 			for k in range(1,self.N_step+1):
 				if np.linalg.norm(self.d_all_N[robot_name][k])!=0:
 					J2C=self.J2C_all_N[robot_name][k]												#get kth step joint to collision
-					print(robot_name,np.linalg.norm(self.d_all_N[robot_name][k]),'J2C',J2C,'step',k)
 					Jacobian2C=self.robot_toolbox[robot_name].jacobian(self.robot_N_step[robot_name][k])[:,:J2C+1]						#get the jacobian to that joint
-					d_col=self.d_all_N[robot_name][k]
-					d_col_6=np.append(d_col,np.zeros(3))
-					d_q=np.dot(np.linalg.pinv(Jacobian2C),d_col_6)		##convert collision vector d to joint space
+					min_distance=self.min_distance_all_N[robot_name][k]
+					print(robot_name,min_distance,'J2C',J2C,'step',k)
+
+					d_col=self.d_all_N[robot_name][k]*np.sign(min_distance)
+					d_q=np.dot(np.linalg.pinv(Jacobian2C[3:]),d_col)		##convert collision vector d to joint space
+					# d_q=self.d_col2q_col(d_col,Jacobian2C[3:])
 					d_q=np.append(d_q,np.zeros(len(self.robot_jointname[robot_name])-len(d_q)))		##leave joints after J2C zero
+					print('collision q:',d_q)
 					J_k=np.tile(np.eye(len(self.robot_jointname[robot_name])),(1,k))
 					J_k=np.hstack((J_k,np.tile(np.zeros((len(self.robot_jointname[robot_name]),len(self.robot_jointname[robot_name]))),(1,self.N_step-k))))
 					Aineq[k-1,:]=np.dot(d_q,J_k)
-					# bineq[k-1]=0
+					# bineq[k-1]=self.sigmafun(min_distance)
 
 		############################################q constraint################################################
 
 
 		############################################qdot constraint################################################
-			vel_limit=np.tile(self.robot_toolbox[robot_name].joint_vel_limit,(self.N_step,1)).flatten()
+			vel_limit=np.tile(self.robot_toolbox[robot_name].joint_vel_limit,(self.N_step,1)).flatten()/2
+			if robot_name=='abb':
+				vel_limit=np.tile(self.robot_toolbox[robot_name].joint_vel_limit,(self.N_step,1)).flatten()/10
 
 
 		##############################################solve QP#####################################################
@@ -354,7 +385,10 @@ class Planner(object):
 			H=np.dot(J.T,J)+eps*np.eye(self.N_step*len(self.robot_jointname[robot_name]))
 			F=np.dot(J.T,np.dot(Kp,self.robot_N_step[robot_name][-1]-qd))
 			du_all=solve_qp(H,F,G=Aineq,h=bineq,lb=-vel_limit-u_all, ub=vel_limit-u_all)
-			u_all_new=u_all+du_all
+			alpha=fminbound(self.search_func,0,1,args=(robot_name,qd,u_all,du_all,))
+			# print(alpha)
+			print(du_all)
+			u_all_new=u_all+alpha*du_all
 		except:
 			traceback.print_exc()
 		################update N_step properties##############################################
