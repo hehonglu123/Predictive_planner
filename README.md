@@ -19,17 +19,17 @@ wsl2 on win11 OK
 * Swig 4.0.2 or later
 
 ## Binary Packages:
-* lcov: sudo apt-get install locv
-* ipopt: sudo apt-get install ros-noetic-ipopt
-* fcl: sudo apt-get install ros-noetic-fcl
-* bullet inverse dynamics float64: sudo apt-get install libbullet-extras-dev
-* ompl: sudo apt-get install ros-noetic-ompl
-* taskflow: sudo apt-get install ros-noetic-taskflow
+* lcov: `sudo apt-get install locv`
+* ipopt: `sudo apt-get install ros-noetic-ipopt`
+* fcl: `sudo apt-get install ros-noetic-fcl`
+* bullet inverse dynamics float64: `sudo apt-get install libbullet-extras-dev`
+* ompl: `sudo apt-get install ros-noetic-ompl`
+* taskflow: `sudo apt-get install ros-noetic-taskflow`
 
 ## Python Packages
-* catkin_tools
-* QP: pip install qpsolvers
-* General Robotice Toolbox:
+* catkin_tools: `sudo apt-get install python3-catkin-tools`
+* QP: `pip install qpsolvers`
+* General Robotice Toolbox: `pip install general-robotics-toolbox`
 * etc.
 
 ## ROS Packages (to be built in catkin_ws):
