@@ -1,6 +1,12 @@
 # Instruction
+*Tesseract Setup*
 ![](images/tess_viewer.png)
-![](images/gazebo_setup.png)
+*Execution*
+Sawyer 20 Steps                 |  ABB 20 Steps
+:------------------------------:|:-------------------------:
+![](images/Sawyer_20_step.gif)  | ![](images/ABB_20_step.gif)
+
+*SoftWare Architecture*
 ![](images/diagram.jpg)
 
 
@@ -27,8 +33,8 @@ wsl2 on win11 OK
 * etc.
 
 ## ROS Packages (to be built in catkin_ws):
-* tesseract (use wstool): https://github.com/tesseract-robotics/tesseract_python
-* robotraconteur (noetic branch): https://github.com/robotraconteur/robotraconteur
+* tesseract (*use wstool*): https://github.com/tesseract-robotics/tesseract_python
+* robotraconteur (*noetic branch*): https://github.com/robotraconteur/robotraconteur
 * RobotRaconteur_Gazebo_Server_Plugin: https://github.com/johnwason/RobotRaconteur_Gazebo_Server_Plugin
 * robotraconteur_companion: 
 
