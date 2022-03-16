@@ -29,7 +29,7 @@ class Planner(object):
 		self._running=False
 
 		###look ahead steps and timestep
-		self.N_step=1
+		self.N_step=20
 		self.ts=0.1
 
 		#load calibration parameters
@@ -254,7 +254,7 @@ class Planner(object):
 			A,B=self.grad_fu(robot_name,self.robot_N_step[robot_name][i+1],u_all[i],J2C)
 
 	def sigmafun(self,x):
-		a=5;b=3;e=0.00006;l=1;
+		a=1;b=5;e=0.05;l=1;
 		return np.divide(a*b*(x-e),l+b*(x-e))
 
 	###line search with qp
@@ -293,12 +293,12 @@ class Planner(object):
 						print(robot_name,min_distance,'J2C',J2C,'step',k)
 						d_col=self.d_all_N[robot_name][k]*np.sign(min_distance)
 						d_q=np.dot(np.linalg.pinv(Jacobian2C[3:]),d_col)		##convert collision vector d to joint space
-						# d_q=self.d_col2q_col(d_col,Jacobian2C[3:])
+						d_q=d_q/np.linalg.norm(d_q)								##normalize collision vector d_q as direction only
 						d_q=np.append(d_q,np.zeros(len(self.robot_jointname[robot_name])-len(d_q)))		##leave joints after J2C zero
 						J_k=np.tile(np.eye(len(self.robot_jointname[robot_name])),(1,k))
 						J_k=np.hstack((J_k,np.tile(np.zeros((len(self.robot_jointname[robot_name]),len(self.robot_jointname[robot_name]))),(1,self.N_step-k))))
 						Aineq[k-1,:]=np.dot(d_q,J_k)
-						# bineq[k-1]=self.sigmafun(min_distance)
+						bineq[k-1]=self.sigmafun(min_distance)
 
 			############################################q constraint################################################
 
@@ -316,7 +316,8 @@ class Planner(object):
 				H=np.dot(J.T,J)+eps*np.eye(self.N_step*len(self.robot_jointname[robot_name]))
 				F=np.dot(J.T,np.dot(Kp,self.robot_N_step[robot_name][-1]-qd))
 				du_all=solve_qp(H,F,G=Aineq,h=bineq,lb=-vel_limit-u_all, ub=vel_limit-u_all)
-				alpha=fminbound(self.search_func,0,1,args=(robot_name,qd,u_all,du_all,))
+				alpha=1
+				# alpha=fminbound(self.search_func,0,1,args=(robot_name,qd,u_all,du_all,))
 				# print(alpha)
 				u_all_new=u_all+alpha*du_all
 			except:
@@ -360,13 +361,14 @@ class Planner(object):
 
 					d_col=self.d_all_N[robot_name][k]*np.sign(min_distance)
 					d_q=np.dot(np.linalg.pinv(Jacobian2C[3:]),d_col)		##convert collision vector d to joint space
-					# d_q=self.d_col2q_col(d_col,Jacobian2C[3:])
+					d_q=d_q/np.linalg.norm(d_q)								##normalize collision vector d_q as direction only
 					d_q=np.append(d_q,np.zeros(len(self.robot_jointname[robot_name])-len(d_q)))		##leave joints after J2C zero
 					print('collision q:',d_q)
 					J_k=np.tile(np.eye(len(self.robot_jointname[robot_name])),(1,k))
 					J_k=np.hstack((J_k,np.tile(np.zeros((len(self.robot_jointname[robot_name]),len(self.robot_jointname[robot_name]))),(1,self.N_step-k))))
 					Aineq[k-1,:]=np.dot(d_q,J_k)
-					# bineq[k-1]=self.sigmafun(min_distance)
+					bineq[k-1]=self.sigmafun(min_distance)
+					print('barrier',self.sigmafun(min_distance))
 
 		############################################q constraint################################################
 
@@ -385,9 +387,10 @@ class Planner(object):
 			H=np.dot(J.T,J)+eps*np.eye(self.N_step*len(self.robot_jointname[robot_name]))
 			F=np.dot(J.T,np.dot(Kp,self.robot_N_step[robot_name][-1]-qd))
 			du_all=solve_qp(H,F,G=Aineq,h=bineq,lb=-vel_limit-u_all, ub=vel_limit-u_all)
-			alpha=fminbound(self.search_func,0,1,args=(robot_name,qd,u_all,du_all,))
-			# print(alpha)
-			print(du_all)
+			alpha=1
+			# alpha=fminbound(self.search_func,0,1,args=(robot_name,qd,u_all,du_all,))
+			# print('alpha:',alpha)
+			print('du_all',du_all)
 			u_all_new=u_all+alpha*du_all
 		except:
 			traceback.print_exc()
