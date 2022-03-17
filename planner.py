@@ -253,7 +253,7 @@ class Planner(object):
 		for i in range(k):
 			A,B=self.grad_fu(robot_name,self.robot_N_step[robot_name][i+1],u_all[i],J2C)
 
-	def sigmafun(self,x):
+	def barrier(self,x):
 		a=1;b=5;e=0.05;l=1;
 		return np.divide(a*b*(x-e),l+b*(x-e))
 
@@ -274,8 +274,6 @@ class Planner(object):
 		###iterate a few times before execution
 		###initialize random control input toward desired direction
 		q_cur=self.robot_state[robot_name].InValue.joint_position
-		u_temp=0.2*(qd-q_cur)/np.linalg.norm(qd-q_cur)
-		# u_all=np.tile(u_temp,(self.N_step,1)).flatten()
 		u_all=np.zeros(len(self.robot_jointname[robot_name])*self.N_step)
 		self.state_prop(robot_name,u_all)
 
@@ -298,7 +296,7 @@ class Planner(object):
 						J_k=np.tile(np.eye(len(self.robot_jointname[robot_name])),(1,k))
 						J_k=np.hstack((J_k,np.tile(np.zeros((len(self.robot_jointname[robot_name]),len(self.robot_jointname[robot_name]))),(1,self.N_step-k))))
 						Aineq[k-1,:]=np.dot(d_q,J_k)
-						bineq[k-1]=self.sigmafun(min_distance)
+						bineq[k-1]=self.barrier(min_distance)					##barrier to push robot away from collision
 
 			############################################q constraint################################################
 
@@ -342,7 +340,6 @@ class Planner(object):
 			self.state_prop(robot_name,u_all)
 		else:
 			###pick up from previous iteration
-			# u_all=np.append(self.u_all[robot_name][len(self.robot_jointname[robot_name]):],self.u_all[robot_name][-len(self.robot_jointname[robot_name]):])
 			u_all=np.append(self.u_all[robot_name][len(self.robot_jointname[robot_name]):],np.zeros(len(self.robot_jointname[robot_name])))
 			self.state_prop(robot_name,u_all)
 
@@ -366,9 +363,9 @@ class Planner(object):
 					print('collision q:',d_q)
 					J_k=np.tile(np.eye(len(self.robot_jointname[robot_name])),(1,k))
 					J_k=np.hstack((J_k,np.tile(np.zeros((len(self.robot_jointname[robot_name]),len(self.robot_jointname[robot_name]))),(1,self.N_step-k))))
-					Aineq[k-1,:]=np.dot(d_q,J_k)
-					bineq[k-1]=self.sigmafun(min_distance)
-					print('barrier',self.sigmafun(min_distance))
+					Aineq[k-1,:]=np.dot(d_q,J_k)							##J*du*d_q
+					bineq[k-1]=self.barrier(min_distance)
+					print('barrier',self.barrier(min_distance))				##barrier to push robot away from collision
 
 		############################################q constraint################################################
 
@@ -387,10 +384,24 @@ class Planner(object):
 			H=np.dot(J.T,J)+eps*np.eye(self.N_step*len(self.robot_jointname[robot_name]))
 			F=np.dot(J.T,np.dot(Kp,self.robot_N_step[robot_name][-1]-qd))
 			du_all=solve_qp(H,F,G=Aineq,h=bineq,lb=-vel_limit-u_all, ub=vel_limit-u_all)
-			alpha=1
-			# alpha=fminbound(self.search_func,0,1,args=(robot_name,qd,u_all,du_all,))
+			#if no solution from QP
+			if isinstance(du_all, type(None)):				
+				print('QP no solution')
+				print(bineq)
+				bineq_new=np.clip(bineq,-0.5,np.inf)
+				print(bineq_new)
+				du_all=solve_qp(H,F,G=Aineq,h=bineq_new,lb=-vel_limit-u_all, ub=vel_limit-u_all)
+				if isinstance(du_all, type(None)):				
+					bineq_new=np.clip(bineq,0,np.inf)
+					du_all=solve_qp(H,F,G=Aineq,h=bineq_new,lb=-vel_limit-u_all, ub=vel_limit-u_all)
+
+			if np.linalg.norm(bineq)==0:
+				alpha=fminbound(self.search_func,0,1,args=(robot_name,qd,u_all,du_all,))
+				print('alpha:',alpha)
+			else:
+				alpha=1
 			# print('alpha:',alpha)
-			print('du_all',du_all)
+			# print('du_all',du_all)
 			u_all_new=u_all+alpha*du_all
 		except:
 			traceback.print_exc()

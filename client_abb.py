@@ -32,6 +32,7 @@ ABB.command_mode = jog_mode
 
 start_joint_ABB=np.array([0.64833199, 0.99963736,-0.99677272,-0.        , 1.56793168, 0.64833199])
 ABB.jog_freespace(start_joint_ABB,np.ones(6),True)
+planner_inst.state_prop('abb',np.zeros(6*planner_inst.N_step))	###update position
 
 ###Command mode 
 ABB.command_mode = halt_mode
