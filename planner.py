@@ -67,14 +67,13 @@ class Planner(object):
 		ABB_joint_names=['ABB1200_joint_1','ABB1200_joint_2','ABB1200_joint_3','ABB1200_joint_4','ABB1200_joint_5','ABB1200_joint_6']
 		ABB_link_names=['ABB1200_link_1','ABB1200_link_2','ABB1200_link_3','ABB1200_link_4','ABB1200_link_5','ABB1200_link_6']
 
-		
+		#Robot dictionaries, all reference by name
 		self.robot_name_list=['sawyer','abb']
 		self.robot_linkname={'sawyer':Sawyer_link_names,'abb':ABB_link_names}
 		self.robot_jointname={'sawyer':Sawyer_joint_names,'abb':ABB_joint_names}
 		
 
 		######tesseract environment setup:
-
 		with open("urdf/combined.urdf",'r') as f:
 			combined_urdf = f.read()
 		with open("urdf/combined.srdf",'r') as f:
@@ -91,7 +90,7 @@ class Planner(object):
 		self.t_env.applyCommand(cmd1)
 		self.t_env.applyCommand(cmd2)
 
-
+		#Tesseract reports all GJK/EPA distance within contact_distance threshold
 		contact_distance=0.2
 		monitored_link_names = self.t_env.getLinkNames()
 		self.manager = self.t_env.getDiscreteContactManager()
@@ -99,7 +98,7 @@ class Planner(object):
 		self.manager.setCollisionMarginData(CollisionMarginData(contact_distance))
 
 
-		#######viewer setup, for urdf setup verification only#########################
+		#######viewer setup, for URDF setup verification in browser @ localhost:8000/#########################
 		self.viewer = TesseractViewer()
 
 		self.viewer.update_environment(self.t_env, [0,0,0])
@@ -111,6 +110,7 @@ class Planner(object):
 		self.robot_N_step={'sawyer':np.zeros((self.N_step+1,7)),'abb':np.zeros((self.N_step+1,6))} #0 to N_step
 		self.u_all={'sawyer':np.zeros(self.N_step*7),'abb':np.zeros(self.N_step*6)} #0 to N_step-1 control input qdot
 		
+	#######################################update joint angles in Tesseract Viewer###########################################
 	def viewer_joints_update(self,robots_joint):
 		joint_names=[]
 		joint_values=[]
@@ -142,6 +142,7 @@ class Planner(object):
 		self._running = False
 		self._checker.join()
 
+	################################single step distance checker##########################################################
 	def distance_check_all(self,robots_joint):
 		#return collision vector d_all and Joint to collision J2C_all (count from 0) #
 
@@ -209,6 +210,7 @@ class Planner(object):
 		# print(d_all,J2C_all,min_distance['sawyer'])
 		return d_all,J2C_all,min_distance
 
+	###############################################distance checking for future N step########################################################
 	def distance_check_all_Nstep(self,robots_joint_N):
 		d_all_N={}
 		J2C_all_N={}
@@ -231,6 +233,7 @@ class Planner(object):
 		# print(d_all_N,J2C_all_N)
 		return d_all_N,J2C_all_N,min_distance_all_N
 
+	##########################################background distance checker, running continuously, based on predicted N step future ##################################
 	def distance_check_background(self):
 		now=time.time()		###running @ 500~1000Hz
 		###collision checker, 1 current + future N collision check
@@ -240,7 +243,7 @@ class Planner(object):
 				# now=time.time()
 				self.d_all_N,self.J2C_all_N,self.min_distance_all_N=self.distance_check_all_Nstep(self.robot_N_step)
 
-
+	##########################################state propogation, get real time joint angle, propogate with N step u #############################################
 	def state_prop(self,robot_name,u_all):
 		###update current real time joint position
 		self.robot_N_step[robot_name][0]=self.robot_state[robot_name].InValue.joint_position
@@ -249,10 +252,7 @@ class Planner(object):
 		for i in range(1,self.N_step+1):
 			self.robot_N_step[robot_name][i]=self.robot_N_step[robot_name][i-1]+self.ts*self.u_all[robot_name][(i-1)*len(self.robot_jointname[robot_name]):i*len(self.robot_jointname[robot_name])]
 
-	def trajgrad_k(self,k,robot_name,u_all,J2C):
-		for i in range(k):
-			A,B=self.grad_fu(robot_name,self.robot_N_step[robot_name][i+1],u_all[i],J2C)
-
+	#######################################barrier function for collision, push du based on signed collision distance########################################
 	def barrier(self,x):
 		a=1;b=5;e=0.05;l=1;
 		return np.divide(a*b*(x-e),l+b*(x-e))
@@ -269,7 +269,7 @@ class Planner(object):
 		f=np.dot(d_col,jac)
 		d_q=solve_qp(H,f)
 		return d_q
-	##############multi step planner, return instantaneous q_dot for execution#############
+	##############multi step planner for initial planning, take gradient Niter times#############
 	def plan_initial(self,robot_name,qd,Niter):
 		###iterate a few times before execution
 		###initialize random control input toward desired direction
@@ -328,7 +328,6 @@ class Planner(object):
 
 	##############multi step planner, return instantaneous q_dot for execution#############
 	def plan(self,robot_name,qd):
-		###TODO: change dq to collision vector at different future step, 
 		#running @ 40Hz
 		# now=time.time()
 		##############################u_all, trajectory N_step initialization#####################################
@@ -428,7 +427,7 @@ def main():
 		print("planner service started")
 
 		input("Press enter to quit")
-
+		#stop background checker
 		planner_inst.stop()
 	
 
