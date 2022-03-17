@@ -6,7 +6,12 @@ Sawyer 20 Steps                 |  ABB 20 Steps
 :------------------------------:|:-------------------------:
 ![](images/Sawyer_20_step.gif)  | ![](images/ABB_20_step.gif)
 
+*2 Robot Predictive Move*
+
+![](images/move2.gif)
+
 *SoftWare Architecture*
+
 ![](images/diagram.jpg)
 
 
@@ -59,7 +64,7 @@ export GAZEBO_PLUGIN_PATH=~/catkin_ws/devel/lib
 
 ## Running instructions
 
-`./start_all` to start everything
+* `./start_all` to start simulation environment
+* `python planner.py` to bring up planner
+* `python client_sawyer.py` or ` python client_abb.py`
 
-open separate terminals and run
-`python client_same.py`
