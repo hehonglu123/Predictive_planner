@@ -1,3 +1,6 @@
+# Overview
+Robotic arm real time centralized planner, with predicted future (fixed horizon) collision avoidance.
+
 # Instruction
 *Tesseract Setup*
 ![](images/tess_viewer.png)
