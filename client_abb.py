@@ -42,14 +42,25 @@ ABB.command_mode = position_mode
 
 vel_ctrl.enable_velocity_mode()
 qd=np.array([-0.64833199, 0.99963736,-0.99677272,-0.        , 1.56793168, 0.64833199])
-planner_inst.plan_initial('abb',qd,50)
+planner_inst.plan_initial('abb',qd,30)
 while np.linalg.norm(state_w.InValue.joint_position-qd)>0.1:
 	qdot=planner_inst.plan('abb',qd)
 	print(qdot)
 	now=time.time()
 	while time.time()-now<planner_inst.ts:
 		vel_ctrl.set_velocity_command(qdot)
-	# vel_ctrl.set_velocity_command(np.zeros(6))
+
+
 
 vel_ctrl.set_velocity_command(np.zeros((6,)))
+
+planner_inst.plan_initial('abb',start_joint_ABB,30)
+while np.linalg.norm(state_w.InValue.joint_position-start_joint_ABB)>0.1:
+	qdot=planner_inst.plan('abb',start_joint_ABB)
+	print(qdot)
+	now=time.time()
+	while time.time()-now<planner_inst.ts:
+		vel_ctrl.set_velocity_command(qdot)
+
+vel_ctrl.set_velocity_command(np.zeros((6,)))	
 vel_ctrl.disable_velocity_mode()

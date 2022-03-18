@@ -41,8 +41,8 @@ Sawyer.command_mode = position_mode
 
 
 vel_ctrl.enable_velocity_mode()
-qd=np.array([-2,-0.3,0,0,0,0,0])
-planner_inst.plan_initial('sawyer',qd,50)
+qd=np.array([-1.1,-0.3,0,0,0,0,0])
+planner_inst.plan_initial('sawyer',qd,30)
 while np.linalg.norm(state_w.InValue.joint_position-qd)>0.1:
 	qdot=planner_inst.plan('sawyer',qd)
 	print(qdot)
@@ -51,12 +51,17 @@ while np.linalg.norm(state_w.InValue.joint_position-qd)>0.1:
 	while time.time()-now<planner_inst.ts:
 		vel_ctrl.set_velocity_command(qdot)
 
-
-	# qd_temp=state_w.InValue.joint_position+planner_inst.ts*qdot
-	# while np.linalg.norm(state_w.InValue.joint_position-qd_temp)>0.01:
-	# 	vel_ctrl.set_velocity_command(qdot)
-	# 	if time.time()-now>planner_inst.ts:
-	# 		break
-
 vel_ctrl.set_velocity_command(np.zeros((7,)))
+
+planner_inst.plan_initial('sawyer',start_joint_sawyer,30)
+while np.linalg.norm(state_w.InValue.joint_position-start_joint_sawyer)>0.1:
+	qdot=planner_inst.plan('sawyer',start_joint_sawyer)
+	print(qdot)
+	now=time.time()
+	
+	while time.time()-now<planner_inst.ts:
+		vel_ctrl.set_velocity_command(qdot)
+
+
+vel_ctrl.set_velocity_command(np.zeros((7,)))		
 vel_ctrl.disable_velocity_mode()

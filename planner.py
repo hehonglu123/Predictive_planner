@@ -314,6 +314,14 @@ class Planner(object):
 				H=np.dot(J.T,J)+eps*np.eye(self.N_step*len(self.robot_jointname[robot_name]))
 				F=np.dot(J.T,np.dot(Kp,self.robot_N_step[robot_name][-1]-qd))
 				du_all=solve_qp(H,F,G=Aineq,h=bineq,lb=-vel_limit-u_all, ub=vel_limit-u_all)
+				#if no solution from QP
+				if isinstance(du_all, type(None)):				
+					print('QP no solution')
+					bineq_new=np.clip(bineq,-0.5,np.inf)
+					du_all=solve_qp(H,F,G=Aineq,h=bineq_new,lb=-vel_limit-u_all, ub=vel_limit-u_all)
+					if isinstance(du_all, type(None)):				
+						bineq_new=np.clip(bineq,0,np.inf)
+						du_all=solve_qp(H,F,G=Aineq,h=bineq_new,lb=-vel_limit-u_all, ub=vel_limit-u_all)
 				alpha=1
 				# alpha=fminbound(self.search_func,0,1,args=(robot_name,qd,u_all,du_all,))
 				# print(alpha)
@@ -386,16 +394,14 @@ class Planner(object):
 			#if no solution from QP
 			if isinstance(du_all, type(None)):				
 				print('QP no solution')
-				print(bineq)
 				bineq_new=np.clip(bineq,-0.5,np.inf)
-				print(bineq_new)
 				du_all=solve_qp(H,F,G=Aineq,h=bineq_new,lb=-vel_limit-u_all, ub=vel_limit-u_all)
 				if isinstance(du_all, type(None)):				
 					bineq_new=np.clip(bineq,0,np.inf)
 					du_all=solve_qp(H,F,G=Aineq,h=bineq_new,lb=-vel_limit-u_all, ub=vel_limit-u_all)
 
 			if np.linalg.norm(bineq)==0:
-				alpha=fminbound(self.search_func,0,1,args=(robot_name,qd,u_all,du_all,))
+				alpha=fminbound(self.search_func,0.01,1,args=(robot_name,qd,u_all,du_all,))
 				print('alpha:',alpha)
 			else:
 				alpha=1
