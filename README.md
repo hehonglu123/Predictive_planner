@@ -6,9 +6,10 @@ Sawyer 20 Steps                 |  ABB 20 Steps
 :------------------------------:|:-------------------------:
 ![](images/Sawyer_20_step.gif)  | ![](images/ABB_20_step.gif)
 
-*2 Robot Predictive Move*
 
-![](images/move2.gif)
+2 Robot Predictive Move         | 2 Robot Predictive Move      
+:------------------------------:|:-------------------------:
+![](images/move2.gif)           | ![](images/2robots.gif)
 
 *SoftWare Architecture*
 
