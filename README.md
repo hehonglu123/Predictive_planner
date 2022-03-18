@@ -42,7 +42,7 @@ wsl2 on win11 OK
 * tesseract (*use wstool*): https://github.com/tesseract-robotics/tesseract_python
 * robotraconteur (*noetic branch*): https://github.com/robotraconteur/robotraconteur
 * RobotRaconteur_Gazebo_Server_Plugin: https://github.com/johnwason/RobotRaconteur_Gazebo_Server_Plugin
-* robotraconteur_companion: 
+* robotraconteur_companion: https://github.com/robotraconteur/robotraconteur_companion
 
 
 
