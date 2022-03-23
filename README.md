@@ -1,3 +1,6 @@
+# Overview
+Robotic arm real time centralized planner, with predicted future (fixed horizon) collision avoidance.
+
 # Instruction
 *Tesseract Setup*
 ![](images/tess_viewer.png)
@@ -6,9 +9,10 @@ Sawyer 20 Steps                 |  ABB 20 Steps
 :------------------------------:|:-------------------------:
 ![](images/Sawyer_20_step.gif)  | ![](images/ABB_20_step.gif)
 
-*2 Robot Predictive Move*
 
-![](images/move2.gif)
+2 Robot Predictive Move         | 2 Robot Predictive Move      
+:------------------------------:|:-------------------------:
+![](images/move2.gif)           | ![](images/2robots.gif)
 
 *SoftWare Architecture*
 
@@ -41,7 +45,7 @@ wsl2 on win11 OK
 * tesseract (*use wstool*): https://github.com/tesseract-robotics/tesseract_python
 * robotraconteur (*noetic branch*): https://github.com/robotraconteur/robotraconteur
 * RobotRaconteur_Gazebo_Server_Plugin: https://github.com/johnwason/RobotRaconteur_Gazebo_Server_Plugin
-* robotraconteur_companion: 
+* robotraconteur_companion: https://github.com/robotraconteur/robotraconteur_companion
 
 
 
