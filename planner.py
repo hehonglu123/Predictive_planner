@@ -99,11 +99,11 @@ class Planner(object):
 
 
 		#######viewer setup, for URDF setup verification in browser @ localhost:8000/#########################
-		self.viewer = TesseractViewer()
+		# self.viewer = TesseractViewer()
 
-		self.viewer.update_environment(self.t_env, [0,0,0])
+		# self.viewer.update_environment(self.t_env, [0,0,0])
 
-		self.viewer.start_serve_background()
+		# self.viewer.start_serve_background()
 
 
 		##########N step planner predicted joint configs#################
