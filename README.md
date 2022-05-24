@@ -21,28 +21,20 @@ Sawyer 20 Steps                 |  ABB 20 Steps
 
 
 ## System
-Ubuntu (20.04) with ROS noetic
-wsl2 on win11 OK
+* Ubuntu (20.04) with ROS noetic
+(wsl2 on win11 OK)
+* Python3.8
 
 * Simulation robot service (https://drive.google.com/file/d/1lNFGjh11DI32MYN8jgVuNADaLYteue4R/view?usp=sharing & [dotnet3 runtime](https://docs.microsoft.com/en-us/dotnet/core/install/linux-ubuntu))
 * Swig 4.0.2 or later
-
-## Binary Packages:
-* lcov: `sudo apt-get install locv`
-* ipopt: `sudo apt-get install ros-noetic-ipopt`
-* fcl: `sudo apt-get install ros-noetic-fcl`
-* bullet inverse dynamics float64: `sudo apt-get install libbullet-extras-dev`
-* ompl: `sudo apt-get install ros-noetic-ompl`
-* taskflow: `sudo apt-get install ros-noetic-taskflow`
 
 ## Python Packages
 * catkin_tools: `sudo apt-get install python3-catkin-tools`
 * QP: `pip install qpsolvers`
 * General Robotice Toolbox: `pip install general-robotics-toolbox`
-* etc.
+* Tesseract: `pip install tesseract-robotics tesseract-robotics-viewer` (may need to upgrade pip first)
 
 ## ROS Packages (to be built in catkin_ws):
-* tesseract (*use wstool*): https://github.com/tesseract-robotics/tesseract_python
 * robotraconteur (*noetic branch*): https://github.com/robotraconteur/robotraconteur
 * RobotRaconteur_Gazebo_Server_Plugin: https://github.com/johnwason/RobotRaconteur_Gazebo_Server_Plugin
 * robotraconteur_companion: https://github.com/robotraconteur/robotraconteur_companion
@@ -52,6 +44,7 @@ wsl2 on win11 OK
 ## workspace build command (using catkin tools):
 ```
 rosdep install --from-paths . --ignore-src --rosdistro noetic -y
+catkin config --cmake-args -DROBOTRACONTEUR_ROS=1
 catkin build
 ```
 
