@@ -27,6 +27,7 @@ Sawyer 20 Steps                 |  ABB 20 Steps
 
 * Simulation robot service (https://drive.google.com/file/d/1lNFGjh11DI32MYN8jgVuNADaLYteue4R/view?usp=sharing & [dotnet3 runtime](https://docs.microsoft.com/en-us/dotnet/core/install/linux-ubuntu))
 * Swig 4.0.2 or later
+* Robot Raconteur C# Native (`sudo apt-get install librobotraconteur-net-native`)
 
 ## Python Packages
 * catkin_tools: `sudo apt-get install python3-catkin-tools`
